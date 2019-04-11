@@ -17,14 +17,14 @@ class StateMachine:
         try:
             handler = self.handlers[self.startState]
         except:
-            raise InitializationError(" .set_start() doit-être devant .run()")
+            raise InitializationError(" .set_start() doit être devant .run()")
         if not self.endStates:
-            raise  InitializationError(" end_state ne peut pas êrte vide")
+            raise  InitializationError(" end_state ne peut pas être vide")
     
         while True:
             (newState, txt) = handler(txt)
             if newState.upper() in self.endStates:
-                print("Arrête de la machine : ", newState)
+                print("Arrêt de la machine : ", newState)
                 break 
             else:
                 handler = self.handlers[newState.upper()]    
