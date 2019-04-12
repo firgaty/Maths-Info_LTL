@@ -1,10 +1,13 @@
 from ast import *
-
+import sys
 
 if __name__ == "__main__":
     pass
 
+sys.setrecursionlimit(20000)
+
 line = input("Expression: ")
+print(line)
 
 tokens = line.split(" ")
 

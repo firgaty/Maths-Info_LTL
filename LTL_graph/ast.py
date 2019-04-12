@@ -227,7 +227,7 @@ class AST(object):
         return ast
 
     def _simplify_ast(self, ast):
-        # TODO ne pas faire de récursif, merci Guido.
+        # TODO optimiser récursif.
 
         if type(ast) == Not:
             return self._simplify_ast(self._simpl_not(ast))

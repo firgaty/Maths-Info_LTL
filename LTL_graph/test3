@@ -1,1 +1,1 @@
-( ( ( X a ) v b ) v ( ( not ( not ( not true ) ) ) U b ) )
+( ( ( X a ) v b ) v ( ( not ( not ( not false ) ) ) U b ) )
