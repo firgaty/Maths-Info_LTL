@@ -8,8 +8,10 @@ line = input("Expression: ")
 
 tokens = line.split(" ")
 
-ast = make_top_ast(tokens)
-print(ast.to_string())
+ast = AST()
 
-ast = simplify_ast(ast)
-print(ast.to_string())
+ast.make_root(tokens)
+print(ast.root.to_string())
+
+ast.simplify_root()
+print(ast.root.to_string())

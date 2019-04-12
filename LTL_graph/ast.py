@@ -7,11 +7,21 @@ class Expr(object):
         self.name = name
         self.left = left
         self.right = right
+        self.formula = None
 
     def to_string(self):
         if (type(self.left) == None):
             return "(" + self.name + " " + self.right.to_string() + ")"
         return "(" + self.left.to_string() + " " + self.name + " " + self.right.to_string() + ")"
+
+    def is_valid_expr0(self):
+        return not self.name == None
+
+    def is_valid_expr1(self):
+        return not self.right == None
+
+    def is_valid_expr2(self):
+        return not (self.right == None or self.left == None)
 
 
 class Expr0(Expr):
@@ -118,94 +128,172 @@ class Release(Expr2):
         self.right = right
 
 
-def make_ast(tok_list, left):
+class AST(object):
+    def __init__(self):
+        self.root = None
+        self.sub_formula_table = []
+        self.sub_formula_index = {}
 
-    if tok_list == None or len(tok_list) == 0:
-        return None, left
+    def __make_ast(self, tok_list, left):
+        if tok_list == None or len(tok_list) == 0:
+            return None, left
 
-    tok = tok_list.pop(0)
-    
-    if tok == "(":
-        return make_ast(tok_list, left)
-    if tok == ")":
-        return tok_list, left
+        tok = tok_list.pop(0)
 
-    if tok == "X":
-        tok_list, ast = make_ast(tok_list, None)
-        return make_ast(tok_list, Next(ast))
-    elif tok == "G":
-        tok_list, ast = make_ast(tok_list, None)
-        return make_ast(tok_list, Always(ast))
-    elif tok == "F":
-        tok_list, ast = make_ast(tok_list, None)
-        return make_ast(tok_list, Eventually(ast))
-    elif tok == "&":
-        tok_list, ast = make_ast(tok_list, None)
-        return make_ast(tok_list, And(left, ast))
-    elif tok == "v":
-        tok_list, ast = make_ast(tok_list, None)
-        return make_ast(tok_list, Or(left, ast))
-    elif tok == "U":
-        tok_list, ast = make_ast(tok_list, None)
-        return make_ast(tok_list, Until(left, ast))
-    elif tok == "not":
-        tok_list, ast = make_ast(tok_list, None)
-        return make_ast(tok_list, Not(ast))
-    elif tok == "true":
-        return make_ast(tok_list, Top())
-    elif tok == "false":
-        return make_ast(tok_list, Bottom())
+        if tok == "(":
+            return self.__make_ast(tok_list, left)
+        if tok == ")":
+            return tok_list, left
 
-    return make_ast(tok_list, Var(tok))
+        if tok == "X":
+            tok_list, ast = self.__make_ast(tok_list, None)
+            return self.__make_ast(tok_list, Next(ast))
+        elif tok == "G":
+            tok_list, ast = self.__make_ast(tok_list, None)
+            return self.__make_ast(tok_list, Always(ast))
+        elif tok == "F":
+            tok_list, ast = self.__make_ast(tok_list, None)
+            return self.__make_ast(tok_list, Eventually(ast))
+        elif tok == "&":
+            tok_list, ast = self.__make_ast(tok_list, None)
+            return self.__make_ast(tok_list, And(left, ast))
+        elif tok == "v":
+            tok_list, ast = self.__make_ast(tok_list, None)
+            return self.__make_ast(tok_list, Or(left, ast))
+        elif tok == "U":
+            tok_list, ast = self.__make_ast(tok_list, None)
+            return self.__make_ast(tok_list, Until(left, ast))
+        elif tok == "not":
+            tok_list, ast = self.__make_ast(tok_list, None)
+            return self.__make_ast(tok_list, Not(ast))
+        elif tok == "true":
+            return self.__make_ast(tok_list, Top())
+        elif tok == "false":
+            return self.__make_ast(tok_list, Bottom())
 
-def make_top_ast(tok_list):
-    tok_list, ast = make_ast(tok_list, None)
-    return ast
+        return self.__make_ast(tok_list, Var(tok))
+
+    def make_root(self, tok_list):
+        tok_list, ast = self.__make_ast(tok_list, None)
+        self.root = ast
+
+    def _simpl_not(self, ast):
+        if not ast.is_valid_expr1():
+            return ast
+        if type(ast.right) == Top:
+            return Bottom()
+        elif type(ast.right) == Bottom:
+            return Top()
+        elif type(ast.right) == Not:
+            return ast.right.right
+        return ast
+
+    def _simpl_next(self, ast):
+        if not ast.is_valid_expr1():
+            return ast
+        if type(ast.right) == Top():
+            return ast.right
+        return ast
+
+    def _simpl_until(self, ast):
+        if not ast.is_valid_expr2():
+            return ast
+        if type(ast.right) == Bottom:
+            return ast.right
+        if type(ast.right) == Next and type(ast.left) == Next:
+            return Next(Until(ast.left.right, ast.right.right))
+
+    def _simpl_and(self, ast):
+        if not ast.is_valid_expr2():
+            return ast
+        if type(ast.right) == Next and type(ast.left) == Next:
+            return Next(And(ast.left.right, ast.right.right))
+        return Or(Not(ast.left), Not(ast.left)) # transformation en Ou
+
+    # TODO
+    def _simpl_or(self, ast):
+        return ast
+
+    # TODO
+    def _simpl_always(self, ast):
+        return ast
+
+    # TODO
+    def _simplify_always(self, ast):
+        return ast
+
+    # TODO
+    def _simpl_release(self, ast):
+        return ast
+
+    def _simplify_ast(self, ast):
+        # TODO ne pas faire de récursif, merci Guido.
+
+        if type(ast) == Not:
+            return self._simplify_ast(self._simpl_not(ast))
+        # elif type(ast) == Eventually:
+        #     return self._simplify_ast(self._simplify_always(ast))
+        # elif type(ast) == Or:
+        #     return self._simplify_ast(self._simpl_or(ast))
+        # elif type(ast) == And:
+        #     return self._simplify_ast(self._simpl_and(ast))
+        # elif type(ast) == Until:
+        #     return self._simplify_ast(self._simpl_until(ast))
+        # elif type(ast) == Release:
+        #     return self._simplify_ast(self._simpl_release(ast))
+        # elif type(ast) == Always:
+        #     return self._simplify_ast(self._simpl_always(ast))
+        # elif type(ast) == Next:
+        #     return self._simplify_ast(self._simpl_next(ast))
+
+        if ast.right != None:
+            ast.right = self._simplify_ast(ast.right)
+        if ast.left != None:
+            ast.left = self._simplify_ast(ast.left)
+
+        return ast
+
+    def simplify_root(self):
+        self.root = self._simplify_ast(self.root)
+
+    def _add_formula(self, formula, ast):
+        if formula in self.sub_formula_index:
+            return self.sub_formula_index[formula]
+        self.sub_formula_index[formula] = len(self.sub_formula_table)
+        self.sub_formula_table.append(ast)
+        self.sub_formula_index["(not " + formula + ")"] = len(self.sub_formula_table)
+        self.sub_formula_table.append(Not(ast))
+
+    # Merci Python de ne pas faire de récursion terminale, merci Guido. /s
+    def _gen_formulas(self, ast):
+        node = [(ast, 0)] # stack
+        right = None
+        left = [] # stack
+
+        while node[-1] != None:
+            if node[-1][0].left != None and node[-1][1] < 1:
+                node.append((node[-1][0].left, 1))
+                continue
+            if node[-1][0].right != None and node[-1][1] < 2:
+                node.append((node[-1][0].right, 2))
+                continue
+
+            if node[-1][0].left == None and node[-1][0].right == None:
+                # TODO
+                return
+
+    def gen_formulas(self):
+        self._gen_formulas(self.root)
+        return
+
+######################
+#   Simplification   #
+######################
 
 # TODO simplifications. 
 
-def is_valid_expr0(ast):
-    return not (ast == None)
 
-def is_valid_expr1(ast):
-    return not (ast == None or ast.right == None)
 
-def is_valid_expr2(ast):
-    return not (ast == None or ast.right == None or ast.left == None)
-
-def simpl_not(ast):
-    if not is_valid_expr1(ast):
-        return ast
-    if type(ast.right) == Top:
-        return Bottom()
-    elif type(ast.right) == Bottom:
-        return Top()
-    elif type(ast.right) == Not:
-        return ast.right.right
-    return ast
-
-def simpl_next(ast):
-    if not is_valid_expr1(ast):
-        return ast
-    if type(ast.right) == Top():
-        return ast.right
-    return ast
-
-def simpl_until(ast):
-    if not is_valid_expr2(ast):
-        return ast
-    if type(ast.right) == Bottom:
-        return ast.right
-    if type(ast.right) == Next and type(ast.left) == Next:
-        return Next(Until(ast.left.right, ast.right.right))
-
-def simplify_ast(ast):
-    if type(ast) == Not:
-        return simplify_ast(simpl_not(ast))
-
-    if ast.right != None:
-        ast.right = simplify_ast(ast.right)
-    if ast.left != None:
-        ast.left = simplify_ast(ast.left)
-
-    return ast
+######################
+#       Atomes       #
+######################
