@@ -53,6 +53,6 @@ while (True):
     ast.simplify_root()
     print("Simplification: \t" + ast.root.to_string())
 
-    formulas = ast.gen_formulas()
-    formulas.sort_pos()
+    formulas = Formula(ast.root)
     print("Sous-formules: \t\t" + formulas.to_string())
+    print("Sous-formules neg: \t" + formulas.to_string(False))

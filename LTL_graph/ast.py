@@ -28,7 +28,7 @@ class Expr(object):
 
     def contains(self, expr):
         return self.is_same(expr) or (self.left.contains(expr) if self.left != None else False) or (self.right.contains(expr) if self.right != None else False)
-
+        
     def simplify(self):
         return self, False
 
@@ -108,7 +108,7 @@ class Next(Expr1):
     def simplify(self):
         if not self.is_valid_expr():
             return self, False
-        if type(self.right) == Top:
+        if type(self.right) == Top or type(self.right) == False: 
             return self.right, True
         if type(self.right) == Always and type(self.right.right) == Eventually:
             return self.right, True
@@ -146,6 +146,8 @@ class And(Expr2):
     def simplify(self):
         if not self.is_valid_expr():
             return self, False
+        if type(self.left) == Top and type(self.right) == Top:
+            return Top(), True
         if type(self.right) == Until or type(self.right) == Release:
             if self.left.is_same(self.right.right):
                 return self.left, True
@@ -165,6 +167,8 @@ class Or(Expr2):
     def simplify(self):
         if not self.is_valid_expr():
             return self, False
+        if type(self.left) == Top or type(self.right) == Top:
+            return Top(), True            
         if type(self.left) == Always and type(self.right) == Always and type(self.left.right) == Eventually and type(self.right.right) == Eventually:
             return Always(Eventually(Or(self.left.right, self.right.right))), True
         if type(self.left) == Release and type(self.right) == Release and self.left.right.is_same(self.right.right):
@@ -180,7 +184,7 @@ class Until(Expr2):
     def simplify(self):
         if not self.is_valid_expr():
             return self, False
-        if type(self.right) == Bottom:
+        if type(self.right) == Bottom or type(self.right) == Top:
             return self.right, True
         if type(self.right) == Next and type(self.left) == Next:
             return Next(Until(self.left.right, self.right.right)), True
@@ -202,9 +206,12 @@ class Release(Expr2):
         # return self, False
 
 class Formula(object):
-    def __init__(self):
-        self.posf_list = [] # Positive formulas.
+    def __init__(self, ast):
+        self.ast = ast
+        self.posf_list = []  # Positive formulas.
+        self.negf_list = []
         self.atoms = []
+        self.gen_formulas()
 
     # check si la formule ou la negation de la formule est déjà dans
     # la liste des sous formules
@@ -215,6 +222,8 @@ class Formula(object):
         return False
 
     def add(self, ast):
+        # if type(ast) == Top or type(ast) == Bottom:
+        #     return True
         if type(ast) == Not:
             ast = ast.right
         if (self.__is_in_list(ast)):
@@ -222,21 +231,52 @@ class Formula(object):
         self.posf_list.append(ast)
         return True
 
-    def to_string(self):
+    def __gen_formulas(self, ast):
+        self.add(ast)
+        if ast.left != None:
+            self.__gen_formulas(ast.left)
+        if ast.right != None:
+            self.__gen_formulas(ast.right)
+
+    def gen_formulas(self):
+        self.__gen_formulas(self.ast)
+        self.sort_pos()
+        self.gen_negf()
+
+    def to_string(self, pos=True):
         s = "[|"
-        for l in self.posf_list:
-            s += " " + l.to_string() + " |"
+        if pos:
+            for l in self.posf_list:
+                s += " " + l.to_string() + " |"
+        else:
+            for l in self.negf_list:
+                s += " " + l.to_string() + " |"
         s += "]"
         return s
 
     def sort_pos(self):
         self.posf_list.sort(key=lambda x: x.get_height(True), reverse=False)
     
+    def gen_negf(self):
+        for ast in self.posf_list:
+            self.negf_list.append(Not(ast).simplify()[0])
 # P in A <=> not P not in A
 # P1 v P2 in A <=> P1 in a v P2 in A
 # P1 U P2 in A <=> P2 in a v (P1 in a & X(P1 U P2) in a)
 
+    def __gen_atom(self, atom, ast):
+        if type(ast) == Or:
+            for elem in atom:
+                return elem
+
+
     def gen_atoms(self):
+        values = [1]*len(self.posf_list)
+
+        while True:
+            if all(elem == 0 for elem in values):
+                break
+
         return
 
 class AST(object):
@@ -297,38 +337,24 @@ class AST(object):
         changed, changed_r, changed_l = False, False, False
         ast, changed = ast.simplify()
 
-        if changed:
-            AST.simplify_ast(ast)
+        while(changed):
+            ast, changed = AST.simplify_ast(ast)
 
         if ast.right != None:
             ast.right, changed_r = AST.simplify_ast(ast.right)
-            if changed:
-                ast, changed = AST.simplify_ast(ast)
+            while (changed_r):
+                ast.right, changed_r = AST.simplify_ast(ast.right)
+            # ast, changed = AST.simplify_ast(ast)
         if ast.left != None:
             ast.left, changed_l = AST.simplify_ast(ast.left)
-            if changed:
-                ast, changed = AST.simplify_ast(ast)
+            while changed_l:
+                ast.left, changed_l = AST.simplify_ast(ast.left)
+            # ast, changed = AST.simplify_ast(ast)
 
         return ast, changed or changed_l or changed_r
 
     def simplify_root(self):
         self.root = self.simplify_ast(self.root)[0]
-
-######################
-#       Atomes       #
-######################
-
-    def __gen_formulas(self, formulas, ast):
-        formulas.add(ast)
-        if ast.left != None:
-            self.__gen_formulas(formulas, ast.left)
-        if ast.right != None:
-            self.__gen_formulas(formulas, ast.right)
-
-    def gen_formulas(self):
-        formulas = Formula()
-        self.__gen_formulas(formulas, self.root)
-        return formulas
 
 ######################
 #       Autres       #
