@@ -9,19 +9,14 @@ class Expr(object):
         self.left = left
         self.right = right
         self.formula = None
+        self.height = None
 
     def to_string(self):
         if (type(self.left) == None):
             return "(" + self.name + " " + self.right.to_string() + ")"
         return "(" + self.left.to_string() + " " + self.name + " " + self.right.to_string() + ")"
 
-    def is_valid_expr0(self):
-        return not self.name == None
-
-    def is_valid_expr1(self):
-        return not self.right == None
-
-    def is_valid_expr2(self):
+    def is_valid_expr(self):
         return not (self.right == None or self.left == None)
 
     def is_same(self, expr):
@@ -34,140 +29,220 @@ class Expr(object):
     def contains(self, expr):
         return self.is_same(expr) or (self.left.contains(expr) if self.left != None else False) or (self.right.contains(expr) if self.right != None else False)
 
+    def simplify(self):
+        return self, False
+
+    def get_height(self, force):
+        if(self.height is None or force):
+            self.height = 1 + max(self.left.get_height(force), self.right.get_height(force))
+        return self.height
 
 class Expr0(Expr):
     def __init__(self, name):
-        self.name = name
-        self.left = None
-        self.right = None
+        super(Expr0, self).__init__(name, None, None)
 
     def to_string(self):
         return self.name
 
+    def is_valid_expr(self):
+        return not self.name == None
+
+    def get_height(self, force):
+        return 1
 
 class Expr1(Expr):
     def __init__(self, name, right):
-        self.name = name
-        self.left = None
-        self.right = right
+        super(Expr1, self).__init__(name, right, None)
+
 
     def to_string(self):
-        return "(" + self.name + " " + self.right.to_string() + ")"
+        return "(" + self.name + self.right.to_string() + ")"
 
+    def is_valid_expr(self):
+        return not self.right == None
+    
+    def get_height(self, force):
+        if(self.height is None or force):
+            self.height = 1 + self.right.get_height(force)
+        return self.height
 
 class Expr2(Expr):
     def __init__(self, name, left, right):
-        self.name = name
-        self.left = left
-        self.right = right
+        super(Expr2, self).__init__(name, right, left)
 
 
 class Top(Expr0):
     def __init__(self):
-        self.name = "true"
-        self.left = None
-        self.right = None
+        super(Top, self).__init__("⊤")
 
 
 class Bottom(Expr0):
     def __init__(self):
-        self.name = "false"
-        self.left = None
-        self.right = None
+        super(Bottom, self).__init__("⊥")
 
 
 class Var(Expr0):
     def __init__(self, name):
-        self.name = name
-        self.left = None
-        self.right = None
+        super(Var, self).__init__(name)
 
 
 class Not(Expr1):
     def __init__(self, right):
-        self.name = "not"
-        self.right = right
-        self.left = None
+        super(Not,self).__init__("¬", right)
 
+    def simplify(self):
+        if not self.is_valid_expr():
+            return self, False
+        if type(self.right) == Top:
+            return Bottom(), True
+        elif type(self.right) == Bottom:
+            return Top(), True
+        elif type(self.right) == Not:
+            return self.right.right, True
+        return self, False
 
 class Next(Expr1):
     def __init__(self, right):
-        self.name = "next"
-        self.right = right
-        self.left = None
+        super(Next, self).__init__("𝗫", right)
+
+    def simplify(self):
+        if not self.is_valid_expr():
+            return self, False
+        if type(self.right) == Top:
+            return self.right, True
+        if type(self.right) == Always and type(self.right.right) == Eventually:
+            return self.right, True
+        return self, False
 
 
 class Eventually(Expr1):
     def __init__(self, right):
-        self.name = "eventually"
-        self.right = right
-        self.left = None
+        super(Eventually, self).__init__("𝗙", right)
 
+    def simplify(self):
+        if not self.is_valid_expr():
+            return self, False
+        return Until(Top(), self.right), False
+        # return self, False
 
 class Always(Expr1):
     def __init__(self, right):
-        self.name = "always"
-        self.right = right
-        self.left = None
+        super(Always, self).__init__("𝗚", right)
 
+
+    def simplify(self):
+        if not self.is_valid_expr():
+            return self, False
+        if (type(self.right) == Release):
+            self.right.left = Bottom()
+            return self.right, True
+        return Release(Bottom(), self.right), True
+        # return self, False
 
 class And(Expr2):
     def __init__(self, left, right):
-        self.name = "and"
-        self.left = left
-        self.right = right
+        super(And, self).__init__("∧", left, right)
+
+    def simplify(self):
+        if not self.is_valid_expr():
+            return self, False
+        if type(self.right) == Until or type(self.right) == Release:
+            if self.left.is_same(self.right.right):
+                return self.left, True
+        if type(self.right) == Next and type(self.left) == Next:
+            return Next(And(self.left.right, self.right.right)), True
+        if self.right.contains(self.left):
+            return self.right, True
+        if self.left.contains(self.right):
+            return self.left, True
+        return Or(Not(self.left), Not(self.right)), True  # transformation en Ou
 
 
 class Or(Expr2):
     def __init__(self, left, right):
-        self.name = "or"
-        self.left = left
-        self.right = right
+        super(Or, self).__init__("∨", left, right)
 
+    def simplify(self):
+        if not self.is_valid_expr():
+            return self, False
+        if type(self.left) == Always and type(self.right) == Always and type(self.left.right) == Eventually and type(self.right.right) == Eventually:
+            return Always(Eventually(Or(self.left.right, self.right.right))), True
+        if type(self.left) == Release and type(self.right) == Release and self.left.right.is_same(self.right.right):
+            return Release(Or(self.left.left, self.right.left), self.right.right), True
+        if self.right.contains(Not(self.left)) or self.left.contains(Not(self.right)):
+            return Top(), True
+        return self, False
 
 class Until(Expr2):
     def __init__(self, left, right):
-        self.name = "until"
-        self.left = left
-        self.right = right
+        super(Until, self).__init__("𝗨", left, right)
+
+    def simplify(self):
+        if not self.is_valid_expr():
+            return self, False
+        if type(self.right) == Bottom:
+            return self.right, True
+        if type(self.right) == Next and type(self.left) == Next:
+            return Next(Until(self.left.right, self.right.right)), True
+        if self.right.contains(self.left):
+            return self.right, True
+        if type(self.right) == Until and self.right.left.contains(self.left):
+            return self.right, True
+        return self, False  
 
 
 class Release(Expr2):
     def __init__(self, left, right):
-        self.name = "release"
-        self.left = left
-        self.right = right
+        super(Release, self).__init__("𝗥", left, right)
 
+    def simplify(self):
+        if not self.is_valid_expr():
+            return self, False
+        return Not(Until(Not(self.left), Not(self.right))), True
+        # return self, False
 
 class Formula(object):
     def __init__(self):
-        self.f_list = []
+        self.posf_list = [] # Positive formulas.
+        self.atoms = []
 
     # check si la formule ou la negation de la formule est déjà dans
     # la liste des sous formules
     def __is_in_list(self, ast):
-        for l in self.f_list:
-            if l.is_same(ast) or l.is_same(Not(ast)):
+        for l in self.posf_list:
+            if l.is_same(ast):
                 return True
         return False
 
     def add(self, ast):
+        if type(ast) == Not:
+            ast = ast.right
         if (self.__is_in_list(ast)):
             return False
-        self.f_list.append(ast)
+        self.posf_list.append(ast)
         return True
 
     def to_string(self):
         s = "[|"
-        for l in self.f_list:
+        for l in self.posf_list:
             s += " " + l.to_string() + " |"
         s += "]"
         return s
 
+    def sort_pos(self):
+        self.posf_list.sort(key=lambda x: x.get_height(True), reverse=False)
+    
+# P in A <=> not P not in A
+# P1 v P2 in A <=> P1 in a v P2 in A
+# P1 U P2 in A <=> P2 in a v (P1 in a & X(P1 U P2) in a)
+
+    def gen_atoms(self):
+        return
 
 class AST(object):
     def __init__(self):
         self.root = None
+        self.height = 0
 
     def __make_ast(self, tok_list, left):
         if tok_list == None or len(tok_list) == 0:
@@ -204,141 +279,40 @@ class AST(object):
         elif tok == "!":
             tok_list, ast = self.__make_ast(tok_list, None)
             return self.__make_ast(tok_list, Not(ast))
-        elif tok == "T":
+        elif tok == "1":
             return self.__make_ast(tok_list, Top())
-        elif tok == "B":
+        elif tok == "0":
             return self.__make_ast(tok_list, Bottom())
 
         return self.__make_ast(tok_list, Var(tok))
 
     def make_root(self, tok_list):
         tok_list, ast = self.__make_ast(tok_list, None)
-        self.root = ast
+        self.root = ast    
 
-######################
-#   Simplification   #
-######################
-
-    def __simple_not(self, ast):
-        if not ast.is_valid_expr1():
-            return ast, False
-        if type(ast.right) == Top:
-            return Bottom(), True
-        elif type(ast.right) == Bottom:
-            return Top(), True
-        elif type(ast.right) == Not:
-            return ast.right.right, True
-        return ast, False
-
-    def __simple_next(self, ast):
-        if not ast.is_valid_expr1():
-            return ast, False
-        if type(ast.right) == Top:
-            return ast.right, True
-        if type(ast.right) == Always and type(ast.right.right) == Eventually:
-            return ast.right, True
-        return ast, False
-
-    def __simple_until(self, ast):
-        if not ast.is_valid_expr2():
-            return ast, False
-        if type(ast.right) == Bottom:
-            return ast.right, True
-        if type(ast.right) == Next and type(ast.left) == Next:
-            return Next(Until(ast.left.right, ast.right.right)), True
-        if ast.right.contains(ast.left):
-            return ast.right, True
-        if type(ast.right) == Until and ast.right.left.contains(ast.left):
-            return ast.right, True
-        return ast, False
-
-    def __simple_and(self, ast):
-        if not ast.is_valid_expr2():
-            return ast, False
-        if type(ast.right) == Until or type(ast.right) == Release:
-            if ast.left.is_same(ast.right.right):
-                return ast.left, True
-        if type(ast.right) == Next and type(ast.left) == Next:
-            return Next(And(ast.left.right, ast.right.right)), True
-        if ast.right.contains(ast.left):
-            return ast.right, True
-        if ast.left.contains(ast.right):
-            return ast.left, True
-        return Or(Not(ast.left), Not(ast.right)), True  # transformation en Ou
-
-    # TODO
-    def __simple_or(self, ast):
-        if not ast.is_valid_expr2():
-            return ast, False
-        if type(ast.left) == Always and type(ast.right) == Always and type(ast.left.right) == Eventually and type(ast.right.right) == Eventually:
-            return Always(Eventually(Or(ast.left.right, ast.right.right))), True
-        if type(ast.left) == Release and type(ast.right) == Release and ast.left.right.is_same(ast.right.right):
-            return Release(Or(ast.left.left, ast.right.left), ast.right.right), True
-        if ast.right.contains(Not(ast.left)) or ast.left.contains(Not(ast.right)):
-            return Top(), True
-        return ast, False
-
-    # TODO
-    def __simple_always(self, ast):
-        if not ast.is_valid_expr1():
-            return ast, False
-        if (type(ast.right) == Release):
-            ast.right.left = Bottom()
-            return ast.right, True
-        return Release(Bottom(), ast.right), True
-        # return ast, False
-
-    # TODO
-    def __simple_eventually(self, ast):
-        if not ast.is_valid_expr1():
-            return ast, False
-        return Until(Top(), ast.right), False
-        # return ast, False
-
-    # TODO
-    def __simple_release(self, ast):
-        if not ast.is_valid_expr2():
-            return ast, False
-        return Not(Until(Not(ast.left), Not(ast.right))), True
-        # return ast, False
-
-    def simplify_ast(self, ast):
+    @staticmethod
+    def simplify_ast(ast):
         # TODO optimiser récursif.
 
         changed, changed_r, changed_l = False, False, False
-        if type(ast) == Not:
-            ast, changed = self.__simple_not(ast)
-        elif type(ast) == Eventually:
-            ast, changed = self.__simple_eventually(ast)
-        elif type(ast) == Or:
-            ast, changed = self.__simple_or(ast)
-        elif type(ast) == And:
-            ast, changed = self.__simple_and(ast)
-        elif type(ast) == Until:
-            ast, changed = self.__simple_until(ast)
-        elif type(ast) == Release:
-            ast, changed = self.__simple_release(ast)
-        elif type(ast) == Always:
-            ast, changed = self.__simple_always(ast)
-        elif type(ast) == Next:
-            ast, changed = self.__simple_next(ast)
+        ast, changed = ast.simplify()
 
         if changed:
-            self.simplify_ast(ast)
+            AST.simplify_ast(ast)
 
         if ast.right != None:
-            ast.right, changed_r = self.simplify_ast(ast.right)
+            ast.right, changed_r = AST.simplify_ast(ast.right)
             if changed:
-                ast, changed = self.simplify_ast(ast)
+                ast, changed = AST.simplify_ast(ast)
         if ast.left != None:
-            ast.left, changed_l = self.simplify_ast(ast.left)
+            ast.left, changed_l = AST.simplify_ast(ast.left)
             if changed:
-                ast, changed = self.simplify_ast(ast)
+                ast, changed = AST.simplify_ast(ast)
 
         return ast, changed or changed_l or changed_r
 
     def simplify_root(self):
-        self.root, changed = self.simplify_ast(self.root)
+        self.root = self.simplify_ast(self.root)[0]
 
 ######################
 #       Atomes       #
@@ -355,3 +329,9 @@ class AST(object):
         formulas = Formula()
         self.__gen_formulas(formulas, self.root)
         return formulas
+
+######################
+#       Autres       #
+######################
+        
+        
