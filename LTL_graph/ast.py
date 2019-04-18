@@ -10,6 +10,7 @@ class Expr(object):
         self.right = right
         self.formula = None
         self.height = None
+        self.logic_height = None
 
     def to_string(self):
         if (type(self.left) == None):
@@ -32,9 +33,14 @@ class Expr(object):
     def simplify(self):
         return self, False
 
-    def get_height(self, force):
+    def get_height(self, force=False):
         if(self.height is None or force):
             self.height = 1 + max(self.left.get_height(force), self.right.get_height(force))
+        return self.height
+
+    def get_logic_height(self, force=False):
+        if(self.height is None or force):
+            self.height = 1 + max(self.left.get_logic_height(force), self.right.get_logic_height(force))
         return self.height
 
 class Expr0(Expr):
@@ -47,7 +53,10 @@ class Expr0(Expr):
     def is_valid_expr(self):
         return not self.name == None
 
-    def get_height(self, force):
+    def get_height(self, force=False):
+        return 1
+
+    def get_logic_height(self, force=False):
         return 1
 
 class Expr1(Expr):
@@ -61,10 +70,15 @@ class Expr1(Expr):
     def is_valid_expr(self):
         return not self.right == None
     
-    def get_height(self, force):
+    def get_height(self, force=False):
         if(self.height is None or force):
             self.height = 1 + self.right.get_height(force)
         return self.height
+    
+    def get_logic_height(self, force=False):
+        if(self.logic_height is None or force):
+            self.logic_height = 1 + self.right.get_logic_height(force)
+        return self.logic_height
 
 class Expr2(Expr):
     def __init__(self, name, left, right):
@@ -114,6 +128,8 @@ class Next(Expr1):
             return self.right, True
         return self, False
 
+    def get_logic_height(self, force=False):
+        return 1
 
 class Eventually(Expr1):
     def __init__(self, right):
@@ -204,80 +220,6 @@ class Release(Expr2):
             return self, False
         return Not(Until(Not(self.left), Not(self.right))), True
         # return self, False
-
-class Formula(object):
-    def __init__(self, ast):
-        self.ast = ast
-        self.posf_list = []  # Positive formulas.
-        self.negf_list = []
-        self.atoms = []
-        self.gen_formulas()
-
-    # check si la formule ou la negation de la formule est déjà dans
-    # la liste des sous formules
-    def __is_in_list(self, ast):
-        for l in self.posf_list:
-            if l.is_same(ast):
-                return True
-        return False
-
-    def add(self, ast):
-        # if type(ast) == Top or type(ast) == Bottom:
-        #     return True
-        if type(ast) == Not:
-            ast = ast.right
-        if (self.__is_in_list(ast)):
-            return False
-        self.posf_list.append(ast)
-        return True
-
-    def __gen_formulas(self, ast):
-        self.add(ast)
-        if ast.left != None:
-            self.__gen_formulas(ast.left)
-        if ast.right != None:
-            self.__gen_formulas(ast.right)
-
-    def gen_formulas(self):
-        self.__gen_formulas(self.ast)
-        self.sort_pos()
-        self.gen_negf()
-
-    def to_string(self, pos=True):
-        s = "[|"
-        if pos:
-            for l in self.posf_list:
-                s += " " + l.to_string() + " |"
-        else:
-            for l in self.negf_list:
-                s += " " + l.to_string() + " |"
-        s += "]"
-        return s
-
-    def sort_pos(self):
-        self.posf_list.sort(key=lambda x: x.get_height(True), reverse=False)
-    
-    def gen_negf(self):
-        for ast in self.posf_list:
-            self.negf_list.append(Not(ast).simplify()[0])
-# P in A <=> not P not in A
-# P1 v P2 in A <=> P1 in a v P2 in A
-# P1 U P2 in A <=> P2 in a v (P1 in a & X(P1 U P2) in a)
-
-    def __gen_atom(self, atom, ast):
-        if type(ast) == Or:
-            for elem in atom:
-                return elem
-
-
-    def gen_atoms(self):
-        values = [1]*len(self.posf_list)
-
-        while True:
-            if all(elem == 0 for elem in values):
-                break
-
-        return
 
 class AST(object):
     def __init__(self):

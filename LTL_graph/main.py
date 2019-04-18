@@ -1,4 +1,5 @@
 from ast import *
+from formulas import *
 import sys
 
 if __name__ == "__main__":
@@ -55,4 +56,8 @@ while (True):
 
     formulas = Formula(ast.root)
     print("Sous-formules: \t\t" + formulas.to_string())
-    print("Sous-formules neg: \t" + formulas.to_string(False))
+    print("Sous-formules neg: \t" + formulas.to_string(1))
+    
+    formulas.gen_atoms()
+    print("Atomes:")
+    print(formulas.to_string(2))
