@@ -15,19 +15,19 @@ explanation = \
         \n\tNext: X, Always: G, Eventually: F, Not: !\
         \n- Les variables sont en une seule lettre et les valeurs Bottom(false) Top(true) sont respectivement notées 0 et 1.\
         \nExemple: (((Xa) v b) U ((a R T)))\
-        \nQui donnera: (((𝗫a) ∨ b) 𝗨 (a 𝗥 T))\n"
+        \nQui donnera: ((𝗫a ∨ b) 𝗨 (a 𝗥 T))\n"
 
 exp = True
 
-# Test
-a = Var("a")
-b = Bottom()
+# # Test
+# a = Var("a")
+# b = Bottom()
 
-if type(a) == Var:
-    print("Var")
-if issubclass(a.__class__, Expr0) :
-    print("Expr0")
-# !Test
+# if type(a) == Var:
+#     print("Var")
+# if issubclass(a.__class__, Expr0) :
+#     print("Expr0")
+# # !Test
 
 while (True):
     
@@ -59,5 +59,5 @@ while (True):
     print("Sous-formules neg: \t" + formulas.to_string(1))
     
     formulas.gen_atoms()
-    print("Atomes:")
+    print("Atomes: " + str(len(formulas.atoms)))
     print(formulas.to_string(2))

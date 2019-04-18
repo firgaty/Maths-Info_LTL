@@ -65,7 +65,8 @@ class Expr1(Expr):
 
 
     def to_string(self):
-        return "(" + self.name + self.right.to_string() + ")"
+        # return "(" + self.name + self.right.to_string() + ")"
+        return self.name + self.right.to_string()
 
     def is_valid_expr(self):
         return not self.right == None
