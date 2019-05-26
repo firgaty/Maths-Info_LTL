@@ -1,0 +1,452 @@
+﻿UNIVERSITÉ PARIS DIDEROT
+UFR Informatique
+Département de formation de Licence L3
+
+
+
+
+
+
+
+
+
+
+
+
+La logique temporelle LTL
+
+
+
+
+Mémoire présenté par :
+Félix DESMARETZ
+Yuchen BAI
+                                 
+Devant le jury :
+François Laroussinie
+
+
+
+
+
+
+
+
+
+
+
+
+05/2019 - 06/2019
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Table des matières
+
+
+Table des matières
+1. Introduction générale        3
+1.1 Introduction        3
+1.2 Vérification        4
+2. Logique temporelle linéaire        6
+2.1 Notation de base        6
+2.1.1 Syntaxe        6
+2.1.2 Sémantique        6
+2.1.3 Modèle        8
+2.1.4 taille temporelle d’une formule        8
+2.2 Normalisation et simplification        8
+2.2.1 Normalisation        8
+2.2.2 Simplification        9
+2.3 Automate de Büchi        11
+2.3.1 Définition        11
+2.4 Automate fini alternant        12
+2.4.1 Algorithme de LTL à Büchi automate        12
+2.4.1.1 Construction déclarative        12
+2.4.1.2 La construction de GBA        13
+2.4.1.3 L’algorithme        13
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+1. Introduction générale
+
+
+1.1 Introduction
+La logique temporelle linéaire (LTL) a beaucoup évolué depuis son introduction en informatique dans les années 1970. De nos jours, il est largement utilisé dans divers domaines tels que la vérification et l'analyse de programmes, la synthèse de programmes, la base de données et l'intelligence artificielle.
+
+
+LTL est une sorte de langage logique dont le principal problème est le problème de la satisfiabilité. Pendant ce temps, le problème de la satisfiabilité est également important dans l’industrie car, en termes de vérification de programme, de synthèse de programme et d’intelligence artificielle, une formule non satisfaisante n’a pas de sens.
+
+
+Pour la programmation réactive, l'exactitude dépend non seulement de l'entrée et de la sortie de l'opération, mais également de la séquence d'exécution du système. La logique temporelle peut décrire la temporalité de la logique et décrire la séquence d'exécution infinie de système en étendant la logique propositionnelle et la logique des prédicats. En général, la logique temporelle est une logique qui contient un facteur temps, un facteur qui ajoute du temps à la logique. À la fin des années 1950, Prior a proposé deux types d'opérateurs temporels, en utilisant "F" et "P" pour indiquer "dans le futur ( Future )" et "dans le passé ( Past )".
+
+
+La logique temporelle a deux branches, la logique temporelle linéaire ( LTL: Linear temporal logic ) et la logique du temps arborescent ( CTL: Computation tree logic ). La vue linéaire considère qu’en même temps, un état n’a qu’un seul successeur, mais le point de vue est qu’il existe une structure de branche en forme d’arbre et qu’un état a plusieurs successeurs ultérieurs possibles. À l’heure actuelle, les deux branches de la logique temporelle ont beaucoup progressé. Nous ne cherchons pas à savoir si l’essence du temps est linéaire ou ramifiée. Dans cet article, nous nous concentrons uniquement sur la logique temporelle linéaire.
+
+
+À la fin des années 1970, Pnueli a introduit la logique temporelle dans le domaine de l’informatique et l’a utilisé comme langage de spécification formalisé pour la spécification et la vérification d’outils concurrents en informatique. Il a donc acquis la communauté informatique en 1996. La plus haute récompense - la récompense de Turing. En 1977, Pnueli proposa la "Logique temporelle linéaire future", désormais la logique temporelle linéaire standard, qui inclut deux nouveaux opérateurs temporels: X (Next) et U (Until).
+La capacité d’expression de LTL est équivalent à la logique des prédicats de premier ordre, mais la difficulté de résolution dans le problème de la satisfiabilité et de la Raisonnement déductif est très différente. La complexité de la logique des prédicats de premier ordre pour ces problèmes est infiniment grande, mais pour LTL, la difficulté de résolution de ces problèmes est PSPACE-complete. C'est pourquoi LTL peut être largement utilisé. 
+
+
+1.2 Vérification
+La première fois que la logique temporelle a été introduite dans le domaine de l'informatique a été de la décrire comme un langage de spécification comportemental. De nombreux outils de vérification de modèle utilisent LTL comme langage de spécification, par exemple SPIN. 
+
+
+Dans cet article, on va utiliser l’algorithme de model-checking pour vérifier le modèle d’un système informatique satisfait une propriété ou non. Par exemple, on souhaite vérifier qu'un programme ne se bloque pas, qu'une variable n'est jamais nulle, etc. Généralement, la propriété est écrite dans un langage, souvent en logique temporelle. La vérification est généralement faite de manière automatique. 
+
+
+Supposons qu’on a un modèle M et une propriété φ，ㄱ φon prend en un modèle exprimé dans un formalisme imposé, et une spécification qui exprime la propriété  φ que doivent vérifier certaines données du modèle. Il effectue ensuite un calcul à partir de ces données, et peut produire deux résultats différents : soit toutes les exécutions du modèle satisfont la spécification, soit au moins une exécution du modèle ne satisfait pas la spécification, et dans ce cas le résultat est négatif et l’automate donne la exécution comme un contre-exemple d’exécution non satisfaisante.
+
+
+
+
+
+
+
+
+  
+
+FIG. 1.1
+
+
+
+
+
+
+
+
+
+
+La complexité de l’utilisation de cette méthode pour résoudre le problème de vérification du modèle dépend de la taille de l’automate A. Si l’espace de recherche de A est très grand, il faut beaucoup de temps pour déterminer si l’exécution est vide ou non.
+
+
+
+
+
+
+
+
+2. Logique temporelle linéaire
+Dans ce partie, on va parler comment modéliser une application, exprimer des spécifications et détailler les algorithmes de model-checking. 
+
+
+2.1 Notation de base
+On note AP un ensemble de propositions atomiques, et soit Σ = . Nous notons  l’ensemble des mots infinis sur l’alphabet Σ.
+2.1.1 Syntaxe
+Une syntaxe est l’opérateurs de logique classique plus des opérateurs du futur et du passé.
+
+
+Les formules LTL sont définies ainsi : 
+– ⊥ (false), et tous les éléments p dans AP sont des formules LTL, 
+– si ϕ et ψ sont des formules LTL, alors ¬ϕ (not ϕ), ϕ ∨ ψ (ϕ or ψ), X ϕ (next ϕ) et ϕ U ψ (ϕ until ψ) sont des formules de LTL.
+
+
+La sémantique de LTL définit si une exécution d’un système donné satisfait une formule.
+* X est lu comme suivant (next en anglais) 
+* U est lu comme jusqu'à (until en anglais)
+* G pour toujours (globalement (globally en anglais))
+* F pour éventuellement (dans le futur (in the future en anglais))
+* R pour libération (release en anglais)
+* W pour faible jusqu'à (weakly until en anglais)
+2.1.2 Sémantique
+Une sémantique est domaine des objets (appelés modèles) sur lesquels on va tester la validité des formules, plus l’interprétation des opérateurs.
+Une formule de LTL peut être satisfaite par une suite infinie d'évaluations de vérité des variables dans AP. Soit w = a0,a1,a2,... tel un mot-ω. Soit w(i) = ai. Soit wi = ai,ai+1,..., qui est un suffixe de w. Formellement, la relation de satisfaction ⊨ entre un mot et une formule de LTL est définie comme suit:
+* w ⊨ p si p ∈ w(0)
+* w ⊨ ¬ψ si w ⊨ ψ
+* w ⊨ φ ∨ ψ si w ⊨ φ ou w ⊨ ψ
+* w ⊨ X ψ si w1 ⊨ ψ (ψ doit être vrai à l'étape suivante)
+* w ⊨ φ U ψ s'il existe i ≥ 0 tel que wi ⊨ ψ et pour tout 0 ≤ k < i, wk ⊨ φ (φ doit rester vrai jusqu'à ce que ψ devienne vrai)
+On dit qu'un mot-ω w satisfait une formule LTL ψ quand w ⊨ ψ.
+Les opérateurs logiques supplémentaires sont définis comme suit:
+* φ ∧ ψ ≡ ¬(¬φ ∨ ¬ψ)
+* φ → ψ ≡ ¬φ ∨ ψ
+* φ ↔ ψ ≡ (φ → ψ) ∧ ( ψ → φ)
+* vrai ≡ p ∨ ¬p, où p ∈ AP
+* faux ≡ ¬vrai
+Les opérateurs temporels supplémentaires R, F et G sont définis comme suit:
+* φ R ψ ≡ ¬(¬φ U ¬ψ)
+* F ψ ≡ vrai U ψ (ψ devient éventuellement vrai)
+* G ψ ≡ faux R ψ ≡ ¬F ¬ψ (ψ reste toujours vrai)
+
+
+  
+
+FIG. 2.1
+2.1.3 Modèle
+Une formule LTL se rapporte toujours à une trace donnée σ d’un système. Les traces constituent les modèles de cette logique.
+
+
+Note: au lieu de l’état, on parle aussi d’instant.
+
+
+2.1.4 taille temporelle d’une formule
+
+
+La taille temporelle |ϕ| mesure le nombre d’opérateurs temporels d’une formule ϕ. Elle est définie par induction comme suit : 
+– |>| = |⊥| = |p| = 1 pour tout p dans AP, 
+– |¬ϕ| = |ϕ|, |ϕ ∨ ψ| = |ϕ| + |ψ|, | X ϕ| = 1 + |ϕ|, |ϕ U ψ| = 1 + |ϕ| + |ψ|.
+2.2 Normalisation et simplification
+2.2.1 Normalisation
+
+
+Avant d'effectuer d'autres opérations sur la formule, nous devons normaliser la formule pour faciliter les autres opérations.
+L'opération de normalisation d'une formule comprend les deux types d'opérations suivants:
+
+
+1. Supprimez les opérateurs <->, ->, G et F, et nous les réécrivons en appliquant les règles suivantes:
+   1. a -> b ≡ ¬a ∨ b           
+   2. a <-> b ≡ (¬a ∨ b) ∧ (¬b ∨ a)    
+   3. G a ≡ False R a            
+   4. F a ≡ True U a  
+
+
+1. Pour s'assurer que l'opérateur ¬ n'apparaisse que devant l'atome, nous le réécrivons en appliquant les règles suivantes:
+   1. ¬True ≡ False            
+   2. ¬False ≡ True            
+   3. ¬¬a ≡ a               
+   4. ¬(Xa) ≡ X(¬a)            
+   5. ¬(G a) ≡ True U ¬a         
+   6. ¬(F a) ≡ False R ¬a         
+   7. ¬(a U b) ≡ ¬a R ¬b         
+   8. ¬(a R b) ≡ ¬a U ¬b         
+   9. ¬(a ∧ b) ≡ ¬a ∨ ¬b         
+   10. ¬(a ∨ b) ≡ ¬a ∧ ¬b         
+   11. ¬(a->b) ≡ a ∧ ¬b          
+   12. ¬(a<->b) ≡ (a ∧ ¬b) ∨ (¬a ∧ b) 
+
+
+Par exemple, si on a la formule : ¬((a -> Xb) U (Ga)), on peut le transfert par les règles ci-dessus:
+1. ¬((a -> Xb) U (Ga)) = ¬(¬a ∨ Xb) R ¬(False R a)
+2. ¬(¬a ∨ Xb) R ¬(False R a) = (¬¬a ∧ ¬Xb) R (¬False U ¬a)
+3. (¬¬a ∧ ¬Xb) R (¬False U ¬a) = (a ∧ X(¬b)) R (True U ¬a)
+
+
+2.2.2 Simplification
+
+
+La simplification permet de raccourcir la longueur de la formule. Ainsi, une fois la formule normalisée, nous utilisons les règles suivantes pour simplifier la formule:
+
+
+1. Simplification de AND ( Λ ):
+   1. True ∧ a ∧ ... ≡ a ∧ ...                  (S1.1)
+   2. False ∧ a ∧ ... ≡ False                  (S1.2)
+   3. a ∧ a ∧ ... ≡ a ∧ ...                   (S1.3)
+
+
+1. Simplification de OR ( V ):
+   1. False ∨ a ∨ ... ≡ a ∨ ...                 (S2.1)
+   2. True ∨ a ∨ ... ≡ True                    (S2.2)
+   3. a ∨ ¬a ∨ ... ≡ True                     (S2.3)
+   4. a ∨ a ∨ ... ≡ a ∨ ...                   (S2.4)
+   5. a ∨ b U (¬a ∨ ... ) ≡ True                   (S2.5)
+   6. b U (a ∨ ... ) ∨ c U (¬a ∨ ...) ≡ True   (S2.6)
+   7. a ∨ b R a ∨ ... ≡ a ∨ ...                 (S2.7)
+   8. a ∨ b U a ∨ ... ≡ b U a ∨ ...               (S2.8)
+
+
+1. Simplification de NEXT( X ):
+   1. X True ≡ True                               (S3.1)
+   2. X False ≡ False                      (S3.2)
+
+
+1. Simplification de UNTIL( U ):
+   1. False U a ≡ a                               (S4.1)
+   2. a U False ≡ False                     (S4.2)
+   3. a U True ≡ True                      (S4.3)
+   4. a U (a ∨ ...) ≡ a ∨ ...                  (S4.4)
+   5. a U (a U b) ≡ a U b                    (S4.5)
+   6. a U (b U a) ≡ b U a                    (S4.6)
+   7. a U (b R a) ≡ b R a                    (S4.7)
+   8. (b R a) U a ≡ a                      (S4.8)
+   9. (a U b) U a ≡ b U a                    (S4.9)
+   10. (b U a) U a ≡ b U a                    (S4.10)
+   11. X a U a ≡ X a ∨ a                     (S4.11)
+   12. X a U X b ≡ X ( a U b )                  (S4.12)
+
+
+1. Simplification de RELEASE( R ): 
+   1. True R a ≡ a                                 (S5.1)
+   2. a R False ≡ False                     (S5.2)
+   3. a R True ≡ True                      (S5.3)
+   4. a R (a ∧ ...) ≡ a ∧ ...                  (S5.4)
+   5. (a ∨ ...) R a ≡ a                     (S5.5)
+   6. a R (a R b) ≡ a R b                    (S5.6)
+   7. a R (b R a) ≡ b R a                    (S5.7)
+   8. a R (b U a) ≡ b U a                    (S5.8)
+   9. (b U a ∨ ... ) R a ≡ a                    (S5.9)
+   10. (a R b) R a ≡ b R a                    (S5.10)
+   11. (b R a) R a ≡ b R a                    (S5.11)
+   12. X a R X b ≡ X ( a R b )                  (S5.12)
+   13. ¬a R a ≡ False R a                      (S5.13)
+   14. (b R (¬a ∧ ...) ∧ ...) R a ≡ False R a           (S5.14)
+
+
+Par exemple, si nous avons la formule (((a ∨ b) R (c R (a ∨ b)) U (a ∨ b)) R a) ∧ a, alors nous pouvons le simplifier par les règles ci-dessus:
+1. Par S5.7 : (((a ∨ b) R (c R (a ∨ b)) U (a ∨ b)) R a) ∧ a = ((c R (a ∨ b)) U (a ∨ b) R a) ^ a ;
+2. Par S4.8 : ((c R (a ∨ b)) U (a ∨ b) R a) ^ a  = ((a ∨ b) R a) ^ a ;
+3. Par S2.7 et N2.8 : ((a ∨ b) R a) ^ a = a ^ a ;
+4. Par S1.3 : a ^ a = a.
+
+
+2.3 Automate de Büchi
+En informatique théorique, un automate de Büchi est un automate fini opérant sur des mots infinis, avec une condition d'acceptation particulière : une chemin infini est réussie si et seulement si elle passe un nombre infini de fois par au moins un état acceptant. Un mot infini est accepté s'il est l'étiquette d'un calcul réussi.
+2.3.1 Définition
+Un automate de Büchi est un quintuplet B = (Q, Σ, δ, I, R) ou : 
+– Q est l’ensemble fini des états, 
+– Σ est l’alphabet, 
+– δ : Q × Σ →  est la fonction de transition, 
+– I ⊆ Q est l’ensemble des états initiaux, 
+– R ⊆ Q est l’ensemble des états répétés. 
+
+
+Soit u = u1u2 . . . ∈  . Une exécution ρ de B sur u est une suite infinie q0, q1, . . . d’éléments de Q telle que : – le premier état est initial : q0 ∈ I, – on passe d’un état au suivant en suivant la fonction de transition : ∀i ≥ 1, qi ∈ δ(qi−1, ui). Une ex´ecution ρ est acceptante si, de plus, une infinit´e de qi sont dans l’ensemble R. Le langage L(B) d’un automate de Büchi B est l’ensemble des mots de Σ ω sur lesquels il existe une exécution acceptante de B.
+
+
+  
+
+FIG 2.3.1
+Automate de Büchi reconnaissant les mots infinis contenant un nombre infini de a.
+
+
+2.4 Automate fini alternant
+
+
+Dans les années 90, Moshe a proposé une méthode pour juger de la satisfiabilité de la formule LTL: en développant la formule LTL dans la forme GBA ( Generalized Büchi automaton )puis en convertissant la GBA en Automate de Büchi, si la langue acceptée du Automate de Büchi est vide, la formule LTL n'est pas satisfaite, sinon la formule LTL est satisfaite. Nous découvrirons que si nous utilisons cette méthode pour évaluer la satisfaisabilité de la formule de LTL, nous devons construire un automate complet.
+
+
+2.4.1 Algorithme de LTL à Büchi automate
+
+
+La première étape produit un automate de Büchi généralisé (GBA) à partir d'une formule LTL, la seconde étape la convertissant en BA, ce qui implique une construction relativement simple.Le LTL étant strictement moins expressif que BA, la construction inverse n'est pas possible.
+
+
+2.4.1.1 Construction déclarative
+
+
+Avant de décrire la construction, nous devons présenter quelques définitions auxiliaires. Pour une formule LTL f, Soit cl (f) un plus petit ensemble de formules qui remplit les conditions suivantes:
+
+
+* true ∈ cl( f )
+* f ∈ cl( f )
+* si f1 ∈ cl( f ) alors neg(f1) ∈ cl( f )
+* si X f1 ∈ cl( f ) alors f1 ∈ cl( f )
+* si f1 ∧ f2 ∈ cl( f ) alors f1,f2 ∈ cl( f )
+* si f1 ∨ f2 ∈ cl( f ) alors f1,f2 ∈ cl( f )
+* si f1 U f2 ∈ cl( f ) alors f1,f2 ∈ cl( f )
+* si f1 R f2 ∈ cl( f ) alors f1,f2 ∈ cl( f )
+
+
+Nous définissons que cl(f) est la clôture de sous-formules de f sous négation. Notez que cl(f) peut contenir des formules qui ne sont pas sous forme normale de négation. Les sous-ensembles de cl(f) vont servir d'états de la GBA équivalente. Notre objectif est de construire la GBA de telle sorte que si un état correspond à un sous-ensemble M ⊂ cl(f), alors la GBA a un parcours acceptant commençant à partir de l’état d’un mot iff si le mot satisfait chaque formule de M et viole chaque formule de cl ( f) / M. Pour cette raison, nous ne considérerons pas chaque ensemble de formules M clairement incohérent ni subsumé par un super ensemble strictement M 'tel que M et M' soient équivalents. Un ensemble M ⊂ cl (f) est au maximum cohérent s'il remplit les conditions suivantes:
+
+
+* true ∈ M
+* f1 ∈ M iff ¬f1 ∉ M
+* f1 ∧ f2 ∈ M iff f1 ∈ M and f2 ∈ M
+* f1 ∨ f2 ∈ M iff f1 ∈ M or f2 ∈ M
+
+
+Nous se mettrons cs(f) l'ensemble des sous-ensembles à la cohérence maximale de cl(f). Nous allons utiliser uniquement cs(f) comme états de l’GBA.
+2.4.1.2 La construction de GBA
+Un GBA équivalent à f est A = (I ∪ cs(f), , Δ, I, F), où :
+* Δ = Δ1 ∪ Δ2
+   * (M, a, M ') Δ1 ssi (M' ∩ AP) ⊆ a ⊆ {p ∈ AP | ¬p ∉ M '} et:
+      * X f1 ∈ M ssi f1 ∈ M ';
+      * f1 U f2 M ssi f2 ∈ M ou (f1 ∈ M et f1 U f2 ∈ M ');
+      * f1 R f2 M ssi f1 ∧ f2 ∈ M ou (f2 ∈ M et f1 R f2 ∈ M ')
+   * Δ2 = {( I, a, M') | (M '∩AP) ⊆ a ⊆ {p ∈ AP | ¬p∉ M '} et f ∈ M'}
+* Pour chaque f1 U f2 ∈ cl(f), {M ∈ cs (f) | f2 ∈ M ou ¬ (f1 U f2) ∈ M} ∈ F
+
+
+Les trois conditions de la définition de Δ1 garantissent que toute exécution de A ne viole pas la sémantique des opérateurs temporels. Notez que F est un ensemble d'ensembles d'états. Les ensembles dans F sont définis pour capturer une propriété de l'opérateur U qui ne peut pas être vérifiée en comparant deux états consécutifs dans une exécution, c'est-à-dire, si f1 U f2 est vraie dans un état puis finalement f2 est vraie à un état ultérieur.
+
+
+2.4.1.3 L’algorithme
+
+
+L'algorithme suivant est dû à Gerth, Peled, Vardi et Wolper. La construction précédente créé de manière exponentielle de nombreux états et ceux-ci peuvent être inaccessibles. L'algorithme suivant évite cette construction initiale et comporte deux étapes. Dans la première étape, il construit progressivement un graphe dirigé. Dans un deuxième temps, il construit un automate de Büchi généralisé (GBA) étiqueté en définissant les nœuds du graphe en tant que l'états et les arêtes dirigées en transitions. Cet algorithme prend en compte l'accessibilité et peut produire un automate plus petit mais la complexité dans le pire des cas reste la même.
+
+
+Les nœuds du graphe sont étiquetés par des ensembles de formules et sont obtenus en décomposant les formules en fonction de leur structure booléenne et en développant les opérateurs temporels afin de séparer immédiatement ce qui doit être vrai de ce qui doit être vrai. . 
+
+
+Par exemple, supposons qu'une formule LTL: f1 U f2 apparaisse dans l'étiquette d'un nœud. f1 U f2 est équivalent à f2 ∨ (f1 ∧ X (f1 U f2)). L'expansion équivalente suggère que f1 U f2 est vraie dans l'une des deux conditions suivantes.
+
+
+1. f1 est en attente à l'heure actuelle et (f1 U f2) est en attente au pas de temps suivant, ou
+2. f2 est valable au pas de temps actuel
+
+
+Les deux cas peuvent être codés en créant deux états (nœuds) de l'automate et l'automate peut sauter de manière non déterministe à l'un d'eux. Dans le premier cas, nous avons déchargé une partie de la charge de la preuve dans le prochain pas de temps; nous avons donc également créé un autre état (nœud) qui comportera l'obligation du prochain pas de temps dans son libellé.
+
+
+Nous devons également considérer l'opérateur temporel R qui peut provoquer une telle séparation de cas. (f1 R f2) est équivalent à (f1 ∧ f2) ∨ (f2 ∧ X (f1 R f2)) et cette extension équivalente suggère que f1 R f2 est vraie dans l'une des deux conditions suivantes.
+
+
+1. f2 en attente à l'heure actuelle et (f1 R f2) en attente au pas de temps suivant, ou
+2. (f1 ∧f2) est maintenu au pas de temps actuel.
+
+
+Pour éviter de nombreux cas dans l’algorithme suivant, définissons les fonctions cur1, next1 et cur2 qui codent les équivalences ci-dessus dans le tableau suivant.
+
+
+
+
+f
+	cur1(f)
+	next(f)
+	cur2(f)
+	f1 U f2
+	{f1}
+	{f1 U f2}
+	{f2}
+	f1 R f2
+	{f1}
+	{f1 R f2}
+	{f1,f2}
+	f1 ∨f2
+	{f2}
+	∅
+	{f1}
+	
+
+
+
+Nous avons également ajouté un cas de disjonction dans le tableau ci-dessus, car il provoque également une scission de cas dans l'automate.

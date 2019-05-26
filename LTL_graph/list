@@ -1,0 +1,51 @@
+And算子的化简
+	
+	True ∧ a ∧ ... ≡ a ∧ ...           (S1.1)
+	False ∧ a ∧ ... ≡ False          (S1.2)
+	a ∧ a ∧ ... ≡ a ∧ ...           (S1.3)
+	若 a 和 b 是冲突的，则 a ∧ b ∧ ... ≡ False（由于冲突算法过于冗余，算法过程见附）
+
+Or算子的化简
+	False ∨ a ∨ ... ≡ a ∨ ...         (S2.1)
+	True ∨ a ∨ ... ≡ True           (S2.2)
+	a ∨ ¬a ∨ ... ≡ True            (S2.3)
+	a ∨ a ∨ ... ≡ a ∨ ...           (S2.4)
+	a ∨ b U (¬a ∨ ... ) ≡ True          (S2.5)
+	b U (a ∨ ... ) ∨ c U (¬a ∨ ...) ≡ True   (S2.6)
+	a ∨ b R a ∨ ... ≡ a ∨ ...         (S2.7)
+	a ∨ b U a ∨ ... ≡ b U a ∨ ...       (S2.8)
+
+Next算子的化简
+	X True ≡ True               (S3.1)
+	X False ≡ False              (S3.2)
+	Until算子的化简
+	False U a ≡ a               (S4.1)
+	a U False ≡ False             (S4.2)
+	a U True ≡ True              (S4.3)
+	a U (a ∨ ...) ≡ a ∨ ...          (S4.4)
+	a U (a U b) ≡ a U b            (S4.5)
+	a U (b U a) ≡ b U a            (S4.6)
+	a U (b R a) ≡ b R a            (S4.7)
+	(b R a) U a ≡ a              (S4.8)
+	(a U b) U a ≡ b U a            (S4.9)
+	(b U a) U a ≡ b U a            (S4.10)
+	X a U a ≡ X a ∨ a             (S4.11)
+	X a U X b ≡ X ( a U b )          (S4.12)
+
+Release算子的化简
+
+	True R a ≡ a                 (S5.1)
+	a R False ≡ False             (S5.2)
+	a R True ≡ True              (S5.3)
+	a R (a ∧ ...) ≡ a ∧ ...          (S5.4)
+	(a ∨ ...) R a ≡ a             (S5.5)
+	a R (a R b) ≡ a R b            (S5.6)
+	a R (b R a) ≡ b R a            (S5.7)
+	a R (b U a) ≡ b U a            (S5.8)
+	(b U a ∨ ... ) R a ≡ a            (S5.9)
+	(a R b) R a ≡ b R a            (S5.10)
+	(b R a) R a ≡ b R a            (S5.11)
+	X a R X b ≡ X ( a R b )          (S5.12)
+	¬a R a ≡ False R a              (S5.13)
+	(b R (¬a ∧ ...) ∧ ...) R a ≡ False R a   (S5.14)
+
