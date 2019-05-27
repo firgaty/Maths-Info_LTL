@@ -66,4 +66,4 @@ while (True):
     buchi = formulas.gen_buchi()
     print(buchi)
 
-    
+    print(test)
