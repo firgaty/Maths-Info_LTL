@@ -1,5 +1,6 @@
 from ast import *
 from formulas import *
+from graph import *
 import sys
 
 if __name__ == "__main__":
@@ -61,3 +62,8 @@ while (True):
     formulas.gen_atoms()
     print("Atomes: " + str(len(formulas.atoms)))
     print(formulas.to_string(2))
+
+    buchi = formulas.gen_buchi()
+    print(buchi)
+
+    

@@ -1,4 +1,5 @@
 from ast import *
+from graph import *
 import itertools
 
 class Formula(object):
@@ -20,7 +21,6 @@ class Formula(object):
         return False
 
     def add(self, ast):
-        
         if type(ast) == Not:
             ast = ast.right
         if type(ast) == Top or type(ast) == Bottom:
@@ -78,7 +78,7 @@ class Formula(object):
         self.pos_1 = i
         # Tri des variables devant les Next.
         self.posf_list[0:i] = sorted(self.posf_list[0:i], key=lambda x: x.get_height(True), reverse=False)
-    
+
     def gen_negf(self):
         for ast in self.posf_list:
             self.negf_list.append(Not(ast).simplify()[0])
@@ -102,9 +102,6 @@ class Formula(object):
                 atom.append(ast)
             else:
                 atom.append(self.negf_list[n])
-        
-        
-                
 
     def gen_atoms(self):
         for values in itertools.product([True,False],repeat=self.pos_1):
@@ -119,3 +116,34 @@ class Formula(object):
                 self.__gen_atom(atom, i)
             self.atoms.append(atom)
         return
+
+    def __atom_is_repeated(self, atom):
+        for e in self.posf_list:
+            if (type(e) == Until):
+                if (self.__is_in_list(e.right, atom) or self.__is_in_list(Not(e), atom)):
+                    return True
+        return False
+
+    def __atom_has_edge(self, atom1, atom2):
+        for e in self.posf_list:
+            if (type(e) == Next):
+                if (self.__is_in_list(e, atom1) and self.__is_in_list(Not(e.right), atom2)):
+                    return False
+                if (self.__is_in_list(Not(e), atom1) and self.__is_in_list(e.right, atom2)):
+                    return False
+        return True
+
+    def gen_buchi(self):
+        buchi = Buchi()
+        for i in range(len(self.atoms)):
+            buchi.add_vertex(i)
+            if (self.atoms[i][-1].is_same(self.ast)):
+                buchi.add_init(i)
+            if (self.__atom_is_repeated(self.atoms[i])):
+                buchi.add_repeated(i)
+
+            for j in range(len(self.atoms)):
+                if (self.__atom_has_edge(self.atoms[i], self.atoms[j])):
+                    buchi.add_edge([i, j])
+        return buchi
+
