@@ -33,6 +33,9 @@ class Expr(object):
     def simplify(self):
         return self, False
 
+    def __simplify(self):
+        return self, False
+
     def get_height(self, force=False):
         if(self.height is None or force):
             self.height = 1 + max(self.left.get_height(force), self.right.get_height(force))
@@ -174,7 +177,7 @@ class And(Expr2):
             return self.right, True
         if self.left.contains(self.right):
             return self.left, True
-        return Or(Not(self.left), Not(self.right)), True  # transformation en Ou
+        return Or((Not(self.left)), (Not(self.right))), True  # transformation en Ou
 
 
 class Or(Expr2):
@@ -182,10 +185,13 @@ class Or(Expr2):
         super(Or, self).__init__("∨", left, right)
 
     def simplify(self):
+        # TODO finir a v !a, a v a
         if not self.is_valid_expr():
             return self, False
         if type(self.left) == Top or type(self.right) == Top:
             return Top(), True            
+        if self.left.is_same(self.right):
+            return self.left, True
         if type(self.left) == Always and type(self.right) == Always and type(self.left.right) == Eventually and type(self.right.right) == Eventually:
             return Always(Eventually(Or(self.left.right, self.right.right))), True
         if type(self.left) == Release and type(self.right) == Release and self.left.right.is_same(self.right.right):
@@ -219,7 +225,7 @@ class Release(Expr2):
     def simplify(self):
         if not self.is_valid_expr():
             return self, False
-        return Not(Until(Not(self.left), Not(self.right))), True
+        return Not(Until(Not(self.left).simplify()[0], Not(self.right).simplify()[0])), True
         # return self, False
 
 class AST(object):
@@ -275,26 +281,26 @@ class AST(object):
 
     @staticmethod
     def simplify_ast(ast):
-        # TODO optimiser récursif.
-
-        changed, changed_r, changed_l = False, False, False
-        ast, changed = ast.simplify()
-
-        while(changed):
-            ast, changed = AST.simplify_ast(ast)
-
-        if ast.right != None:
-            while (changed_r):
-                ast.right, changed_r = AST.simplify_ast(ast.right)
-                if (changed_r):
-                    break
-        if ast.left != None:
-            while changed_l:
-                ast.left, changed_l = AST.simplify_ast(ast.left)
-                if (changed_l):
+        while True:
+            changed, changed_l, changed_r = False, False, False
+            while True:
+                ast, changed = ast.simplify()
+                if not changed:
                     break
 
-        return ast, changed or changed_l or changed_r
+            if ast.right != None:
+                while True:
+                    ast.right, changed_r = AST.simplify_ast(ast.right)
+                    if not changed_r:
+                        break
+
+            if ast.left != None:
+                while True:
+                    ast.left, changed_l = AST.simplify_ast(ast.left)
+                    if not changed_l:
+                        break
+            if not (changed or changed_l or changed_r):
+                return ast, False
 
     def simplify_root(self):
         self.root = self.simplify_ast(self.root)[0]
