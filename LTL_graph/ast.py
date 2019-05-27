@@ -284,15 +284,15 @@ class AST(object):
             ast, changed = AST.simplify_ast(ast)
 
         if ast.right != None:
-            ast.right, changed_r = AST.simplify_ast(ast.right)
             while (changed_r):
                 ast.right, changed_r = AST.simplify_ast(ast.right)
-            # ast, changed = AST.simplify_ast(ast)
+                if (changed_r):
+                    break
         if ast.left != None:
-            ast.left, changed_l = AST.simplify_ast(ast.left)
             while changed_l:
                 ast.left, changed_l = AST.simplify_ast(ast.left)
-            # ast, changed = AST.simplify_ast(ast)
+                if (changed_l):
+                    break
 
         return ast, changed or changed_l or changed_r
 

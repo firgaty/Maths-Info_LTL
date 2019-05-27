@@ -2,6 +2,7 @@ from ast import *
 import itertools
 
 class Formula(object):
+    # TODO effets de bord 
     def __init__(self, ast):
         self.ast = ast
         self.posf_list = []  # Positive formulas.
@@ -19,10 +20,11 @@ class Formula(object):
         return False
 
     def add(self, ast):
-        # if type(ast) == Top or type(ast) == Bottom:
-        #     return True
+        
         if type(ast) == Not:
             ast = ast.right
+        if type(ast) == Top or type(ast) == Bottom:
+            return True
         if (self.__is_in_list(ast, self.posf_list)):
             return False
         self.posf_list.append(ast)
@@ -47,15 +49,21 @@ class Formula(object):
         s = "[|"
         if list_type == 0:
             for l in self.posf_list:
+                if (type(l) is not Not):
+                    s += " "
                 s += " " + l.to_string() + " |"
         elif list_type == 1:
             for l in self.negf_list:
+                if (type(l) is not Not):
+                    s += " "
                 s += " " + l.to_string() + " |"
         elif list_type == 2:
             s += "\n"
             for l in self.atoms:
                 s += "{|"
                 for e in l:
+                    if (type(e) is not Not):
+                        s += " "
                     s += " " + e.to_string() + " |"
                 s += "},\n"
         s += "]"
