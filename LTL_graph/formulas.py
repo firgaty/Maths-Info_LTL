@@ -2,8 +2,9 @@ from ast import *
 from graph import *
 import itertools
 
+
 class Formula(object):
-    # TODO effets de bord 
+    # TODO effets de bord
     def __init__(self, ast):
         self.ast = ast
         self.posf_list = []  # Positive formulas.
@@ -71,13 +72,19 @@ class Formula(object):
 
     def sort_pos(self):
         # Tri les variables et les Next devant.
-        self.posf_list.sort(key=lambda x: x.get_logic_height(True), reverse=False)
+        self.posf_list.sort(
+            key=lambda x: x.get_logic_height(True), reverse=False)
+
+        l = len(self.posf_list) 
         i = 0
-        while self.posf_list[i].get_logic_height() == 1:
-            i += 1
+        if l > 0:
+            while i < l and self.posf_list[i].get_logic_height() == 1:
+                i += 1
+
         self.pos_1 = i
         # Tri des variables devant les Next.
-        self.posf_list[0:i] = sorted(self.posf_list[0:i], key=lambda x: x.get_height(True), reverse=False)
+        self.posf_list[0:i] = sorted(
+            self.posf_list[0:i], key=lambda x: x.get_height(True), reverse=False)
 
     def gen_negf(self):
         for ast in self.posf_list:
@@ -91,20 +98,20 @@ class Formula(object):
         ast = self.posf_list[n]
         if type(ast) == Until:
             if type(ast.right) == Top or self.__is_in_list(ast.right, atom) \
-                or ((type(ast.left) == Top or self.__is_in_list(ast.left, atom)) \
+                or ((type(ast.left) == Top or self.__is_in_list(ast.left, atom))
                     and self.__is_in_list(Next(ast), atom)):
-                    atom.append(ast)
+                atom.append(ast)
             else:
                 atom.append(self.negf_list[n])
         elif type(ast) == Or:
             if type(ast.left) == Top or type(ast.right) == Top \
-                or self.__is_in_list(ast.left, atom) or self.__is_in_list(ast.right, atom):
+                    or self.__is_in_list(ast.left, atom) or self.__is_in_list(ast.right, atom):
                 atom.append(ast)
             else:
                 atom.append(self.negf_list[n])
 
     def gen_atoms(self):
-        for values in itertools.product([True,False],repeat=self.pos_1):
+        for values in itertools.product([True, False], repeat=self.pos_1):
             atom = []
             for i in range(self.pos_1):
                 if values[i]:
@@ -119,6 +126,12 @@ class Formula(object):
 
     def get_atoms(self):
         return self.atoms
+
+    def __atom_is_init(self, atom):
+        for e in atom:
+            if e.is_same(self.ast):
+                return True
+        return False
 
     def __atom_is_repeated(self, atom):
         for e in self.posf_list:
@@ -140,7 +153,7 @@ class Formula(object):
         buchi = Buchi()
         for i in range(len(self.atoms)):
             buchi.add_vertex(i)
-            if (self.atoms[i][-1].is_same(self.ast)):
+            if (self.__atom_is_init(self.atoms[i])):
                 buchi.add_init(i)
             if (self.__atom_is_repeated(self.atoms[i])):
                 buchi.add_repeated(i)
@@ -149,4 +162,3 @@ class Formula(object):
                 if (self.__atom_has_edge(self.atoms[i], self.atoms[j])):
                     buchi.add_edge([i, j])
         return buchi
-

@@ -1,6 +1,7 @@
 from graphviz import Digraph
 from ast import *
 
+
 class BaseGraph(object):
 
     def __init__(self, graph_dict=None):
@@ -93,42 +94,44 @@ class Buchi(BaseGraph):
 
     def make_dot(self, atoms=None):
         g = Digraph('buchi', filename='buchi.png')
-        g.attr('node', shape='oval')
         g.attr('node', style='filled')
 
         for e in self._graph_dict:
+            g.attr('node', shape='oval')
+            g.attr('node', fillcolor='white')
+
             label = ''
 
             if atoms is None:
                 label = str(e)
-                if e in self.init_states:
-                    label = '[' + label + ']'
             else:
                 for i in atoms[e]:
                     if (type(i) is not Not):
-                        label += " "
-                    label += " " + i.to_string() + " |"
-                label = list(label)
-                label.pop()
-                label.pop()
-                label = ''.join(label)
+                        label += " " + i.to_string() + " |"
+
+                if len(label) >= 2:
+                    label = list(label)
+                    label.pop()
+                    label.pop()
+                    label = ''.join(label)
+                else:
+                    label = "⊥"
             if e in self.init_states:
                 g.attr('node', fillcolor='grey')
             if e in self.repeated_states:
                 g.attr('node', shape='octagon')
-                g.node(str(e), label=label)
-                g.attr('node', shape='oval')
-            else:
-                g.node(str(e), label)
             
-            g.attr('node', fillcolor='white')
-        
+            g.node(str(e), label=label)
+
+            
+
         for e in self._generate_edges():
             g.edge(str(e[0]), str(e[1]))
 
         g.render()
 
-        print("Les états à fond gris sont les états initiaux, ceux à fond gris les états ne reconnaissant pas la formule.\n\
-            Les états octogonaux sont les états qui doivent être infiniement répétés afin de vérifier la formule.")
+        print("Les états à fond gris sont les états initiaux et acceptants, ceux à fond blanc les états ne reconnaissant pas la formule.\nLes états octogonaux sont les états qui doivent être infiniement répétés afin de vérifier la formule.")
 
         g.view()
+
+        input("\n\nAppuyez sur une touche pour continuer...\n")
