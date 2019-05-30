@@ -73,25 +73,28 @@ Table des matières
 
 
 Table des matières
-1. Introduction générale        3
-1.1 Introduction        3
-1.2 Vérification        4
-2. Logique temporelle linéaire        6
-2.1 Notation de base        6
-2.1.1 Syntaxe        6
-2.1.2 Sémantique        6
-2.1.3 Modèle        8
-2.1.4 taille temporelle d’une formule        8
-2.2 Normalisation et simplification        8
-2.2.1 Normalisation        8
-2.2.2 Simplification        9
-2.3 Automate de Büchi        11
-2.3.1 Définition        11
-2.4 Automate fini alternant        12
-2.4.1 Algorithme de LTL à Büchi automate        12
-2.4.1.1 Construction déclarative        12
-2.4.1.2 La construction de GBA        13
-2.4.1.3 L’algorithme        13
+1. Introduction générale        4
+1.1 Introduction        4
+1.2 Vérification        5
+2. Logique temporelle linéaire        8
+2.1 Notation de base        8
+2.1.1 Syntaxe        8
+2.1.2 Sémantique        8
+2.1.3 Modèle        10
+2.1.4 taille temporelle d’une formule        10
+2.2 Normalisation et simplification        10
+2.2.1 Normalisation        10
+2.2.2 Simplification        11
+3 Automate        13
+3.1 Automate de Büchi        13
+3.1.1 Définition        13
+3.2 Automate fini alternant        14
+3.2.1 Algorithme de LTL à Büchi automate        14
+3.2.1.1 Construction déclarative        14
+3.2.1.2 La construction de GBA        15
+3.2.1.3 L’algorithme        16
+
+
 
 
 
@@ -326,9 +329,62 @@ Par exemple, si nous avons la formule (((a ∨ b) R (c R (a ∨ b)) U (a ∨ b))
 4. Par S1.3 : a ^ a = a.
 
 
-2.3 Automate de Büchi
+
+
+2.3 Exemple : Spécification d’un ascenseur
+
+
+«Up and Down the Temporal Way» était un article publié par Howard Barringer dans les années 1980 qui utilisait des logiques temporelles pour spécifier formellement une spécification d’un ascenseur.
+
+
+2.3.1 Spécification
+On a les hypothèse suivantes:
+
+
+* Une porte est ouverte ou fermée.
+* Un bouton est enfoncé ou relâché.
+* Un voyant est allumé ou éteint.
+* La cabine est présente à l'étage i ou il est absente.
+
+
+Et nous posons:
+
+
+* * * *  avec LC représente le voyant associé le bouton appelé
+*  avec LS représente le voyant associé le bouton d’envoie
+
+
+2.3.2 Exemples
+   1. Si l'un des boutons d'appel est enfoncé, il reste allumé et reste allumé sauf si la demande est traitée. L'ascenseur doit être présent et pouvoir accueillir des passagers.
+ quand 
+
+
+   1. Si le bouton d’envoi est enfoncé, il est allumé ou l’ascenseur est à l’étage et peut fournir un service immédiat.
+
+ 
+   1. Si jamais un voyant d’appel est éteinte, elle doit rester éteinte sauf si vous appuyez sur le bouton d’appel.
+
+
+
+   1. Si jamais un voyant d’envoie est éteinte, elle doit rester éteinte sauf si vous appuyez sur le bouton d’envoie.
+
+
+
+   1. Il est nécessaire d’exprimer que, si une lumière est allumée, il n’ya pas de service immédiat pour le moment.
+
+
+
+   1. En réalité, les cinq propriétés ci-dessus peuvent être combinées en une propriété suivante.
+        
+        
+
+
+   1. Soit toutes les portes sont correctement fermées, soit au plus une porte est ouverte.
+
+3 Automate
+3.1 Automate de Büchi
 En informatique théorique, un automate de Büchi est un automate fini opérant sur des mots infinis, avec une condition d'acceptation particulière : une chemin infini est réussie si et seulement si elle passe un nombre infini de fois par au moins un état acceptant. Un mot infini est accepté s'il est l'étiquette d'un calcul réussi.
-2.3.1 Définition
+3.1.1 Définition
 Un automate de Büchi est un quintuplet B = (Q, Σ, δ, I, R) ou : 
 – Q est l’ensemble fini des états, 
 – Σ est l’alphabet, 
@@ -346,59 +402,59 @@ FIG 2.3.1
 Automate de Büchi reconnaissant les mots infinis contenant un nombre infini de a.
 
 
-2.4 Automate fini alternant
+3.2 Automate fini alternant
 
 
 Dans les années 90, Moshe a proposé une méthode pour juger de la satisfiabilité de la formule LTL: en développant la formule LTL dans la forme GBA ( Generalized Büchi automaton )puis en convertissant la GBA en Automate de Büchi, si la langue acceptée du Automate de Büchi est vide, la formule LTL n'est pas satisfaite, sinon la formule LTL est satisfaite. Nous découvrirons que si nous utilisons cette méthode pour évaluer la satisfaisabilité de la formule de LTL, nous devons construire un automate complet.
 
 
-2.4.1 Algorithme de LTL à Büchi automate
+3.2.1 Algorithme de LTL à Büchi automate
 
 
 La première étape produit un automate de Büchi généralisé (GBA) à partir d'une formule LTL, la seconde étape la convertissant en BA, ce qui implique une construction relativement simple.Le LTL étant strictement moins expressif que BA, la construction inverse n'est pas possible.
 
 
-2.4.1.1 Construction déclarative
+3.2.1.1 Construction déclarative
 
 
 Avant de décrire la construction, nous devons présenter quelques définitions auxiliaires. Pour une formule LTL f, Soit cl (f) un plus petit ensemble de formules qui remplit les conditions suivantes:
 
 
-* true ∈ cl( f )
-* f ∈ cl( f )
-* si f1 ∈ cl( f ) alors neg(f1) ∈ cl( f )
-* si X f1 ∈ cl( f ) alors f1 ∈ cl( f )
-* si f1 ∧ f2 ∈ cl( f ) alors f1,f2 ∈ cl( f )
-* si f1 ∨ f2 ∈ cl( f ) alors f1,f2 ∈ cl( f )
-* si f1 U f2 ∈ cl( f ) alors f1,f2 ∈ cl( f )
-* si f1 R f2 ∈ cl( f ) alors f1,f2 ∈ cl( f )
+   * true ∈ cl( f )
+   * f ∈ cl( f )
+   * si f1 ∈ cl( f ) alors neg(f1) ∈ cl( f )
+   * si X f1 ∈ cl( f ) alors f1 ∈ cl( f )
+   * si f1 ∧ f2 ∈ cl( f ) alors f1,f2 ∈ cl( f )
+   * si f1 ∨ f2 ∈ cl( f ) alors f1,f2 ∈ cl( f )
+   * si f1 U f2 ∈ cl( f ) alors f1,f2 ∈ cl( f )
+   * si f1 R f2 ∈ cl( f ) alors f1,f2 ∈ cl( f )
 
 
 Nous définissons que cl(f) est la clôture de sous-formules de f sous négation. Notez que cl(f) peut contenir des formules qui ne sont pas sous forme normale de négation. Les sous-ensembles de cl(f) vont servir d'états de la GBA équivalente. Notre objectif est de construire la GBA de telle sorte que si un état correspond à un sous-ensemble M ⊂ cl(f), alors la GBA a un parcours acceptant commençant à partir de l’état d’un mot iff si le mot satisfait chaque formule de M et viole chaque formule de cl ( f) / M. Pour cette raison, nous ne considérerons pas chaque ensemble de formules M clairement incohérent ni subsumé par un super ensemble strictement M 'tel que M et M' soient équivalents. Un ensemble M ⊂ cl (f) est au maximum cohérent s'il remplit les conditions suivantes:
 
 
-* true ∈ M
-* f1 ∈ M iff ¬f1 ∉ M
-* f1 ∧ f2 ∈ M iff f1 ∈ M and f2 ∈ M
-* f1 ∨ f2 ∈ M iff f1 ∈ M or f2 ∈ M
+   * true ∈ M
+   * f1 ∈ M iff ¬f1 ∉ M
+   * f1 ∧ f2 ∈ M iff f1 ∈ M and f2 ∈ M
+   * f1 ∨ f2 ∈ M iff f1 ∈ M or f2 ∈ M
 
 
 Nous se mettrons cs(f) l'ensemble des sous-ensembles à la cohérence maximale de cl(f). Nous allons utiliser uniquement cs(f) comme états de l’GBA.
-2.4.1.2 La construction de GBA
+3.2.1.2 La construction de GBA
 Un GBA équivalent à f est A = (I ∪ cs(f), , Δ, I, F), où :
-* Δ = Δ1 ∪ Δ2
+   * Δ = Δ1 ∪ Δ2
    * (M, a, M ') Δ1 ssi (M' ∩ AP) ⊆ a ⊆ {p ∈ AP | ¬p ∉ M '} et:
-      * X f1 ∈ M ssi f1 ∈ M ';
-      * f1 U f2 M ssi f2 ∈ M ou (f1 ∈ M et f1 U f2 ∈ M ');
-      * f1 R f2 M ssi f1 ∧ f2 ∈ M ou (f2 ∈ M et f1 R f2 ∈ M ')
+   * X f1 ∈ M ssi f1 ∈ M ';
+   * f1 U f2 M ssi f2 ∈ M ou (f1 ∈ M et f1 U f2 ∈ M ');
+   * f1 R f2 M ssi f1 ∧ f2 ∈ M ou (f2 ∈ M et f1 R f2 ∈ M ')
    * Δ2 = {( I, a, M') | (M '∩AP) ⊆ a ⊆ {p ∈ AP | ¬p∉ M '} et f ∈ M'}
-* Pour chaque f1 U f2 ∈ cl(f), {M ∈ cs (f) | f2 ∈ M ou ¬ (f1 U f2) ∈ M} ∈ F
+   * Pour chaque f1 U f2 ∈ cl(f), {M ∈ cs (f) | f2 ∈ M ou ¬ (f1 U f2) ∈ M} ∈ F
 
 
 Les trois conditions de la définition de Δ1 garantissent que toute exécution de A ne viole pas la sémantique des opérateurs temporels. Notez que F est un ensemble d'ensembles d'états. Les ensembles dans F sont définis pour capturer une propriété de l'opérateur U qui ne peut pas être vérifiée en comparant deux états consécutifs dans une exécution, c'est-à-dire, si f1 U f2 est vraie dans un état puis finalement f2 est vraie à un état ultérieur.
 
 
-2.4.1.3 L’algorithme
+3.2.1.3 L’algorithme
 
 
 L'algorithme suivant est dû à Gerth, Peled, Vardi et Wolper. La construction précédente créé de manière exponentielle de nombreux états et ceux-ci peuvent être inaccessibles. L'algorithme suivant évite cette construction initiale et comporte deux étapes. Dans la première étape, il construit progressivement un graphe dirigé. Dans un deuxième temps, il construit un automate de Büchi généralisé (GBA) étiqueté en définissant les nœuds du graphe en tant que l'états et les arêtes dirigées en transitions. Cet algorithme prend en compte l'accessibilité et peut produire un automate plus petit mais la complexité dans le pire des cas reste la même.
@@ -410,8 +466,8 @@ Les nœuds du graphe sont étiquetés par des ensembles de formules et sont obte
 Par exemple, supposons qu'une formule LTL: f1 U f2 apparaisse dans l'étiquette d'un nœud. f1 U f2 est équivalent à f2 ∨ (f1 ∧ X (f1 U f2)). L'expansion équivalente suggère que f1 U f2 est vraie dans l'une des deux conditions suivantes.
 
 
-1. f1 est en attente à l'heure actuelle et (f1 U f2) est en attente au pas de temps suivant, ou
-2. f2 est valable au pas de temps actuel
+   1. f1 est en attente à l'heure actuelle et (f1 U f2) est en attente au pas de temps suivant, ou
+   2. f2 est valable au pas de temps actuel
 
 
 Les deux cas peuvent être codés en créant deux états (nœuds) de l'automate et l'automate peut sauter de manière non déterministe à l'un d'eux. Dans le premier cas, nous avons déchargé une partie de la charge de la preuve dans le prochain pas de temps; nous avons donc également créé un autre état (nœud) qui comportera l'obligation du prochain pas de temps dans son libellé.
@@ -420,8 +476,8 @@ Les deux cas peuvent être codés en créant deux états (nœuds) de l'automate 
 Nous devons également considérer l'opérateur temporel R qui peut provoquer une telle séparation de cas. (f1 R f2) est équivalent à (f1 ∧ f2) ∨ (f2 ∧ X (f1 R f2)) et cette extension équivalente suggère que f1 R f2 est vraie dans l'une des deux conditions suivantes.
 
 
-1. f2 en attente à l'heure actuelle et (f1 R f2) en attente au pas de temps suivant, ou
-2. (f1 ∧f2) est maintenu au pas de temps actuel.
+   1. f2 en attente à l'heure actuelle et (f1 R f2) en attente au pas de temps suivant, ou
+   2. (f1 ∧f2) est maintenu au pas de temps actuel.
 
 
 Pour éviter de nombreux cas dans l’algorithme suivant, définissons les fonctions cur1, next1 et cur2 qui codent les équivalences ci-dessus dans le tableau suivant.
