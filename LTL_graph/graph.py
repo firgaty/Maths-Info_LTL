@@ -1,4 +1,7 @@
-class Graph(object):
+from graphviz import Digraph
+from ast import *
+
+class BaseGraph(object):
 
     def __init__(self, graph_dict=None):
         """ initializes a graph object 
@@ -60,15 +63,16 @@ class Graph(object):
             res += str(edge) + " "
         return res
 
-class Buchi(Graph):
+
+class Buchi(BaseGraph):
     def __init__(self, graph_dict=None):
         super(Buchi, self).__init__(graph_dict)
         self.init_states = []
         self.repeated_states = []
-    
+
     def add_init(self, vertex):
         self.init_states.append(vertex)
-    
+
     def add_repeated(self, vertex):
         self.repeated_states.append(vertex)
 
@@ -86,3 +90,45 @@ class Buchi(Graph):
         for i in self.repeated_states:
             res += str(i) + " "
         return res
+
+    def make_dot(self, atoms=None):
+        g = Digraph('buchi', filename='buchi.png')
+        g.attr('node', shape='oval')
+        g.attr('node', style='filled')
+
+        for e in self._graph_dict:
+            label = ''
+
+            if atoms is None:
+                label = str(e)
+                if e in self.init_states:
+                    label = '[' + label + ']'
+            else:
+                for i in atoms[e]:
+                    if (type(i) is not Not):
+                        label += " "
+                    label += " " + i.to_string() + " |"
+                label = list(label)
+                label.pop()
+                label.pop()
+                label = ''.join(label)
+            if e in self.init_states:
+                g.attr('node', fillcolor='grey')
+            if e in self.repeated_states:
+                g.attr('node', shape='octagon')
+                g.node(str(e), label=label)
+                g.attr('node', shape='oval')
+            else:
+                g.node(str(e), label)
+            
+            g.attr('node', fillcolor='white')
+        
+        for e in self._generate_edges():
+            g.edge(str(e[0]), str(e[1]))
+
+        g.render()
+
+        print("Les états à fond gris sont les états initiaux, ceux à fond gris les états ne reconnaissant pas la formule.\n\
+            Les états octogonaux sont les états qui doivent être infiniement répétés afin de vérifier la formule.")
+
+        g.view()

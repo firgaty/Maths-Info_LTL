@@ -117,6 +117,9 @@ class Formula(object):
             self.atoms.append(atom)
         return
 
+    def get_atoms(self):
+        return self.atoms
+
     def __atom_is_repeated(self, atom):
         for e in self.posf_list:
             if (type(e) == Until):
