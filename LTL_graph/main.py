@@ -1,6 +1,7 @@
 from ast import *
 from formulas import *
 from graph import *
+from gerth import *
 import sys
 
 if __name__ == "__main__":
@@ -31,7 +32,7 @@ exp = True
 # # !Test
 
 while (True):
-    
+
     if exp:
         print(explanation)
         exp = False
@@ -50,20 +51,30 @@ while (True):
     ast = AST()
 
     ast.make_root(tokens)
-    print("AST: \t\t\t"+ ast.root.to_string())
+    print("AST: \t\t\t" + ast.root.to_string())
 
-    ast.simplify_root()
+    # ast.simplify_root()
+    ast.neg_norm_form()
     print("Simplification: \t" + ast.root.to_string())
 
-    formulas = Formula(ast.root)
-    print("Sous-formules: \t\t" + formulas.to_string())
-    print("Sous-formules neg: \t" + formulas.to_string(1))
-    
-    formulas.gen_atoms()
-    print("Atomes: " + str(len(formulas.atoms)))
-    print(formulas.to_string(2))
+    g = Gerth(ast.root)
+    g.create_graph()
 
-    buchi = formulas.gen_buchi()
-    print(buchi)
+    print(g.to_string())
 
-    buchi.make_dot(formulas.get_atoms())
+    gba = g.gba()
+    gba.make_dot()
+
+
+    # formulas = Formula(ast.root)
+    # print("Sous-formules: \t\t" + formulas.to_string())
+    # print("Sous-formules neg: \t" + formulas.to_string(1))
+
+    # formulas.gen_atoms()
+    # print("Atomes: " + str(len(formulas.atoms)))
+    # print(formulas.to_string(2))
+
+    # buchi = formulas.gen_buchi()
+    # print(buchi)
+
+    # buchi.make_dot(formulas.get_atoms(), formulas.ast)

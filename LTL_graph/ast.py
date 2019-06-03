@@ -17,6 +17,11 @@ class Expr(object):
             return "(" + self.name + " " + self.right.to_string() + ")"
         return "(" + self.left.to_string() + " " + self.name + " " + self.right.to_string() + ")"
 
+    def __str__(self):
+        if (type(self.left) == None):
+            return "(" + self.name + " " + str(self.right) + ")"
+        return "(" + str(self.left) + " " + self.name + " " + str(self.right) + ")"
+
     def is_valid_expr(self):
         return not (self.right == None or self.left == None)
 
@@ -29,28 +34,45 @@ class Expr(object):
 
     def contains(self, expr):
         return self.is_same(expr) or (self.left.contains(expr) if self.left != None else False) or (self.right.contains(expr) if self.right != None else False)
-        
+
     def simplify(self):
         return self, False
 
     def __simplify(self):
         return self, False
 
+    def simplify_not(self):
+        self.right = self.right.simplify_not()
+        self.left = self.left.simplify_not()
+        return self
+
+    def neg_norm_form(self, neg):
+        self.right = self.right.neg_norm_form(False)
+        self.left = self.left.neg_norm_form(False)
+        return self
+
     def get_height(self, force=False):
         if(self.height is None or force):
-            self.height = 1 + max(self.left.get_height(force), self.right.get_height(force))
+            self.height = 1 + max(self.left.get_height(force),
+                                  self.right.get_height(force))
         return self.height
 
     def get_logic_height(self, force=False):
         if(self.height is None or force):
-            self.height = 1 + max(self.left.get_logic_height(force), self.right.get_logic_height(force))
+            self.height = 1 + \
+                max(self.left.get_logic_height(force),
+                    self.right.get_logic_height(force))
         return self.height
+
 
 class Expr0(Expr):
     def __init__(self, name):
         super(Expr0, self).__init__(name, None, None)
 
     def to_string(self):
+        return self.name
+
+    def __str__(self):
         return self.name
 
     def is_valid_expr(self):
@@ -62,27 +84,47 @@ class Expr0(Expr):
     def get_logic_height(self, force=False):
         return 1
 
+    def simplify_not(self):
+        return self
+
+    def neg_norm_form(self, neg):
+        if neg:
+            return Not(self)
+        return self
+
+
 class Expr1(Expr):
     def __init__(self, name, right):
         super(Expr1, self).__init__(name, right, None)
-
 
     def to_string(self):
         # return "(" + self.name + self.right.to_string() + ")"
         return self.name + self.right.to_string()
 
+    def __str__(self):
+        return self.name + str(self.right)
+
     def is_valid_expr(self):
         return not self.right == None
-    
+
     def get_height(self, force=False):
         if(self.height is None or force):
             self.height = 1 + self.right.get_height(force)
         return self.height
-    
+
     def get_logic_height(self, force=False):
         if(self.logic_height is None or force):
             self.logic_height = 1 + self.right.get_logic_height(force)
         return self.logic_height
+
+    def simplify_not(self):
+        self.right = self.right.simplify_not()
+        return self
+
+    def neg_norm_form(self, neg):
+        self.right = self.right.neg_norm_form(False)
+        return self
+
 
 class Expr2(Expr):
     def __init__(self, name, left, right):
@@ -93,20 +135,35 @@ class Top(Expr0):
     def __init__(self):
         super(Top, self).__init__("⊤")
 
+    def neg_norm_form(self, neg):
+        if neg:
+            return Bottom()
+        return self
+
 
 class Bottom(Expr0):
     def __init__(self):
         super(Bottom, self).__init__("⊥")
+
+    def neg_norm_form(self, neg):
+        if neg:
+            return Top()
+        return self
 
 
 class Var(Expr0):
     def __init__(self, name):
         super(Var, self).__init__(name)
 
+    def neg_norm_form(self, neg):
+        if neg:
+            return Not(self)
+        return self
+
 
 class Not(Expr1):
     def __init__(self, right):
-        super(Not,self).__init__("¬", right)
+        super(Not, self).__init__("¬", right)
 
     def simplify(self):
         if not self.is_valid_expr():
@@ -119,6 +176,16 @@ class Not(Expr1):
             return self.right.right, True
         return self, False
 
+    def simplify_not(self):
+        self.right = self.right.simplify_not()
+        return self.simplify()[0]
+
+    def neg_norm_form(self, neg):
+        if type(self.right) == Not:
+            return self.right.right.neg_norm_form(False)
+        return self.right.neg_norm_form(True)
+
+
 class Next(Expr1):
     def __init__(self, right):
         super(Next, self).__init__("𝗫", right)
@@ -126,7 +193,7 @@ class Next(Expr1):
     def simplify(self):
         if not self.is_valid_expr():
             return self, False
-        if type(self.right) == Top or type(self.right) == False: 
+        if type(self.right) == Top or type(self.right) == False:
             return self.right, True
         if type(self.right) == Always and type(self.right.right) == Eventually:
             return self.right, True
@@ -134,6 +201,13 @@ class Next(Expr1):
 
     def get_logic_height(self, force=False):
         return 1
+
+    def neg_norm_form(self, neg):
+        if neg:
+            self.right = Not(self.right)
+        self.right = self.right.neg_norm_form(False)
+        return self
+
 
 class Eventually(Expr1):
     def __init__(self, right):
@@ -145,10 +219,13 @@ class Eventually(Expr1):
         return Until(Top(), self.right), False
         # return self, False
 
+    def neg_norm_form(self, neg):
+        return Until(Top(), self.right).neg_norm_form(neg)
+
+
 class Always(Expr1):
     def __init__(self, right):
         super(Always, self).__init__("𝗚", right)
-
 
     def simplify(self):
         if not self.is_valid_expr():
@@ -158,6 +235,10 @@ class Always(Expr1):
             return self.right, True
         return Release(Bottom(), self.right), True
         # return self, False
+
+    def neg_norm_form(self, neg):
+        return Release(Bottom(), self.right).neg_norm_form(neg)
+
 
 class And(Expr2):
     def __init__(self, left, right):
@@ -177,7 +258,30 @@ class And(Expr2):
             return self.right, True
         if self.left.contains(self.right):
             return self.left, True
-        return Or((Not(self.left)), (Not(self.right))), True  # transformation en Ou
+        # transformation en Ou
+        return Or((Not(self.left)), (Not(self.right))), True
+
+    def neg_norm_form(self, neg):
+        if neg:
+            return Or(Not(self.left), Not(self.right)).neg_norm_form(False)
+        self.right = self.right.neg_norm_form(False)
+        self.left = self.left.neg_norm_form(False)
+        if type(self.left) == Top and type(self.right) == Top:
+            return Top()
+        if type(self.right) == Until or type(self.right) == Release:
+            if self.left.is_same(self.right.right):
+                return self.left
+        if type(self.right) == Not and self.left.is_same(self.right.right):
+            return Bottom()
+        if type(self.left) == Not and self.right.is_same(self.left.left):
+            return Bottom()
+        if type(self.right) == Bottom and type(self.left) == Top or type(self.right) == Top and type(self.left) == Bottom:
+            return Bottom()
+        if self.right.contains(self.left):
+            return self.right
+        if self.left.contains(self.right):
+            return self.left
+        return self
 
 
 class Or(Expr2):
@@ -189,7 +293,7 @@ class Or(Expr2):
         if not self.is_valid_expr():
             return self, False
         if type(self.left) == Top or type(self.right) == Top:
-            return Top(), True            
+            return Top(), True
         if self.left.is_same(self.right):
             return self.left, True
         if type(self.left) == Always and type(self.right) == Always and type(self.left.right) == Eventually and type(self.right.right) == Eventually:
@@ -200,6 +304,20 @@ class Or(Expr2):
             return Top(), True
         return self, False
 
+    def neg_norm_form(self, neg):
+        if neg:
+            return And(Not(self.left), Not(self.right)).neg_norm_form(False)
+        self.right = self.right.neg_norm_form(False)
+        self.left = self.left.neg_norm_form(False)
+        if self.left.is_same(self.right):
+            return self.left
+        if type(self.left) == Release and type(self.right) == Release and self.left.right.is_same(self.right.right):
+            return Release(Or(self.left.left, self.right.left), self.right.right).neg_norm_form(False)
+        if self.right.contains(Not(self.left)) or self.left.contains(Not(self.right)):
+            return Top()
+        return self
+
+
 class Until(Expr2):
     def __init__(self, left, right):
         super(Until, self).__init__("𝗨", left, right)
@@ -207,7 +325,7 @@ class Until(Expr2):
     def simplify(self):
         if not self.is_valid_expr():
             return self, False
-        if type(self.right) == Bottom or type(self.right) == Top:
+        if type(self.right) == Bottom:
             return self.right, True
         if type(self.right) == Next and type(self.left) == Next:
             return Next(Until(self.left.right, self.right.right)), True
@@ -215,7 +333,22 @@ class Until(Expr2):
             return self.right, True
         if type(self.right) == Until and self.right.left.contains(self.left):
             return self.right, True
-        return self, False  
+        return self, False
+
+    def neg_norm_form(self, neg):
+        if neg:
+            return Release(Not(self.left), Not(self.right)).neg_norm_form(False)
+        self.right = self.right.neg_norm_form(False)
+        self.left = self.left.neg_norm_form(False)
+        if type(self.right) == Bottom:
+            return self.right
+        if type(self.right) == Next and type(self.left) == Next:
+            return Next(Until(self.left.right, self.right.right)).neg_norm_form(False)
+        if self.right.contains(self.left):
+            return self.right
+        if type(self.right) == Until and self.right.left.contains(self.left):
+            return self.right
+        return self
 
 
 class Release(Expr2):
@@ -227,6 +360,14 @@ class Release(Expr2):
             return self, False
         return Not(Until(Not(self.left).simplify()[0], Not(self.right).simplify()[0])), True
         # return self, False
+
+    def neg_norm_form(self, neg):
+        if neg:
+            return Until(Not(self.left), Not(self.right)).neg_norm_form(False)
+        self.right = self.right.neg_norm_form(False)
+        self.left = self.left.neg_norm_form(False)
+        return self
+
 
 class AST(object):
     def __init__(self):
@@ -277,7 +418,7 @@ class AST(object):
 
     def make_root(self, tok_list):
         tok_list, ast = self.__make_ast(tok_list, None)
-        self.root = ast    
+        self.root = ast
 
     @staticmethod
     def simplify_ast(ast):
@@ -304,9 +445,12 @@ class AST(object):
 
     def simplify_root(self):
         self.root = self.simplify_ast(self.root)[0]
+        self.root = self.root.simplify_not()
+
+    def neg_norm_form(self):
+        self.root = self.root.neg_norm_form(False)
+
 
 ######################
 #       Autres       #
 ######################
-        
-        

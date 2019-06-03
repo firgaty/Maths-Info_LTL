@@ -36,11 +36,11 @@ class BaseGraph(object):
         """
         # edge = set(edge)
         # (vertex1, vertex2) = tuple(edge)
-        vertex1, vertex2 = edge[0], edge[1]
+        vertex1, vertex2, label = edge[0], edge[1], edge[2]
         if vertex1 in self._graph_dict:
-            self._graph_dict[vertex1].append(vertex2)
+            self._graph_dict[vertex1].append((vertex2, label))
         else:
-            self._graph_dict[vertex1] = [vertex2]
+            self._graph_dict[vertex1] = [(vertex2, label)]
 
     def _generate_edges(self):
         """ A static method generating the edges of the 
@@ -50,9 +50,9 @@ class BaseGraph(object):
         """
         edges = []
         for vertex in self._graph_dict:
-            for neighbour in self._graph_dict[vertex]:
+            for (neighbour, label) in self._graph_dict[vertex]:
                 if [neighbour, vertex] not in edges:
-                    edges.append([vertex, neighbour])
+                    edges.append([vertex, (neighbour, label)])
         return edges
 
     def __str__(self):
@@ -92,7 +92,7 @@ class Buchi(BaseGraph):
             res += str(i) + " "
         return res
 
-    def make_dot(self, atoms=None):
+    def make_dot(self, atoms=None, ast=None):
         g = Digraph('buchi', filename='buchi.png')
         g.attr('node', style='filled')
 
@@ -119,14 +119,112 @@ class Buchi(BaseGraph):
             if e in self.init_states:
                 g.attr('node', fillcolor='grey')
             if e in self.repeated_states:
-                g.attr('node', shape='octagon')
+                g.attr('node', shape='rectangle')
             
             g.node(str(e), label=label)
 
             
 
         for e in self._generate_edges():
-            g.edge(str(e[0]), str(e[1]))
+            label = ''
+            for i in e[1][1]:
+                label += i.to_string() + " ∧ "
+            if len(label) > 2:
+                label = list(label)
+                label.pop()
+                label.pop()
+                label = ''.join(label)
+
+            g.edge(str(e[0]), str(e[1][0]), label=label)
+
+        if ast is not None:
+            g.attr("node", color='white', fillcolor='white')
+            g.node(str(len(self._graph_dict)), "Formula : " + ast.to_string() + " ")
+
+        g.render()
+
+        print("Les états à fond gris sont les états initiaux et acceptants, ceux à fond blanc les états ne reconnaissant pas la formule.\nLes états octogonaux sont les états qui doivent être infiniement répétés afin de vérifier la formule.")
+
+        g.view()
+
+        input("\n\nAppuyez sur une touche pour continuer...\n")
+
+class GBA(BaseGraph):
+    def __init__(self, graph_dict=None):
+        super(GBA, self).__init__(graph_dict)
+        self.init_states = []
+        self.repeated_states = []
+
+    def add_init(self, vertex):
+        self.init_states.append(vertex)
+
+    def add_repeated(self, vertex):
+        self.repeated_states.append(vertex)
+
+    def __str__(self):
+        res = "vertices: "
+        for k in self._graph_dict:
+            res += str(k) + " "
+        res += "\nedges: "
+        for edge in self._generate_edges():
+            res += str(edge) + " "
+        res += "\ninit: "
+        for i in self.init_states:
+            res += str(i) + " "
+        res += "\nrepeated: "
+        for i in self.repeated_states:
+            res += str(i) + " "
+        return res
+
+    def make_dot(self, atoms=None, ast=None):
+        g = Digraph('buchi', filename='buchi.png')
+        g.attr('node', style='filled')
+
+        for e in self._graph_dict:
+            g.attr('node', shape='oval')
+            g.attr('node', fillcolor='white')
+
+            label = ''
+
+            if atoms is None:
+                label = str(e)
+            else:
+                for i in atoms[e]:
+                    if (type(i) is not Not):
+                        label += " " + i.to_string() + " |"
+
+                if len(label) >= 2:
+                    label = list(label)
+                    label.pop()
+                    label.pop()
+                    label = ''.join(label)
+                else:
+                    label = "⊥"
+            if e in self.init_states:
+                g.attr('node', fillcolor='grey')
+            if e in self.repeated_states:
+                g.attr('node', shape='rectangle')
+            
+            g.node(str(e), label=label)
+
+            
+
+        for e in self._generate_edges():
+            print(str(e))
+            label = ''
+            for i in e[1][1]:
+                label += str(i) + " ∧ "
+            if len(label) > 2:
+                label = list(label)
+                label.pop()
+                label.pop()
+                label = ''.join(label)
+
+            g.edge(str(e[0]), str(e[1][0]), label=label)
+
+        if ast is not None:
+            g.attr("node", color='white', fillcolor='white')
+            g.node(str(len(self._graph_dict)), "Formula : " + ast.to_string() + " ")
 
         g.render()
 

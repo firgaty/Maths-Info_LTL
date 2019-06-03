@@ -46,7 +46,17 @@ class Formula(object):
         self.sort_pos()
         self.gen_negf()
 
-    def to_string(self, list_type=0):
+    def to_string(self, list_type=0, atoms=None):
+        if list_type == 3:
+            if atoms == None:
+                return ''
+            s = '|'
+            for e in atoms:
+                if (type(e) is not Not):
+                    s += " "
+                s += " " + e.to_string() + " |"
+            return s
+
         s = "[|"
         if list_type == 0:
             for l in self.posf_list:
@@ -141,13 +151,50 @@ class Formula(object):
         return False
 
     def __atom_has_edge(self, atom1, atom2):
-        for e in self.posf_list:
+        # print(self.to_string(3, atom1))
+        # print(self.to_string(3, atom2))
+        
+        for e in atom1:
             if (type(e) == Next):
-                if (self.__is_in_list(e, atom1) and self.__is_in_list(Not(e.right), atom2)):
+                if not self.__is_in_list(e.right, atom2):
+                    # print("atom1.1")
                     return False
-                if (self.__is_in_list(Not(e), atom1) and self.__is_in_list(e.right, atom2)):
+            if (type(e) == Not and type(e.right) == Next):
+                if not self.__is_in_list(Not(e.right).simplify()[0], atom2):
+                    # print("atom1.2")
                     return False
+                # if (self.__is_in_list(e, atom1) and self.__is_in_list(Not(e.right), atom2)):
+                #     return True
+                # if (self.__is_in_list(Not(e), atom1) and self.__is_in_list(e.right, atom2)):
+                #     return True
+        for e in atom2:
+            if (type(e) == Next or (type(e) == Not and type(e.right) == Next)):
+                continue
+            if (not type(e) == Not and not self.__is_in_list(e, atom1) and not self.__is_in_list(Next(e), atom1)):
+                # print("atom2")
+                return False
+            if (type(e) == Not and not self.__is_in_list(e, atom1) and not self.__is_in_list(Not(Next(Not(e).simplify()[0])), atom1)):
+                # print("atom2")
+                return False
+
         return True
+
+    def __get_edge_value(self, atom1, atom2):
+        prime = []
+        length = len(atom1)
+        for i in range(length):
+            if atom1[i].get_height() > 2 or type(atom1[i]) is Next:
+                break
+            if not atom1[i].is_same(atom2[i]):
+                prime.append(atom2[i])
+        if len(prime) == 0:
+            for i in range(length):
+                if atom1[i].get_height() > 2 or type(atom1[i]) is Next:
+                    break
+                if atom1[i].is_same(atom2[i]):
+                    prime.append(atom2[i])
+        return prime
+            
 
     def gen_buchi(self):
         buchi = Buchi()
@@ -160,5 +207,5 @@ class Formula(object):
 
             for j in range(len(self.atoms)):
                 if (self.__atom_has_edge(self.atoms[i], self.atoms[j])):
-                    buchi.add_edge([i, j])
+                    buchi.add_edge([i, j, self.__get_edge_value(self.atoms[i], self.atoms[j])])
         return buchi
